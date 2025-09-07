@@ -222,7 +222,15 @@ export class DynamicConfig {
   }
 
   private async executeApiCall(response: CustomRule['response']): Promise<any> {
-    const { apiUrl, apiMethod = 'GET', apiHeaders = {}, apiBody } = response;
+    const { 
+      apiUrl, 
+      apiMethod = 'GET', 
+      apiHeaders = {}, 
+      apiBody, 
+      apiResponseType = 'auto',
+      apiResponsePath,
+      apiResponseFallback = 'API调用成功，但响应解析失败'
+    } = response;
     
     if (!apiUrl) {
       throw new Error('API URL 未配置');
@@ -241,29 +249,102 @@ export class DynamicConfig {
         fetchOptions.body = apiBody;
       }
       
-      const response = await fetch(apiUrl, fetchOptions);
-      const data = await response.text();
+      const httpResponse = await fetch(apiUrl, fetchOptions);
+      const rawData = await httpResponse.text();
       
-      if (!response.ok) {
-        throw new Error(`API调用失败: ${response.status} ${data}`);
+      if (!httpResponse.ok) {
+        throw new Error(`API调用失败: ${httpResponse.status} ${rawData}`);
       }
       
-      // 尝试解析JSON响应
-      try {
-        const jsonData = JSON.parse(data);
-        // 如果返回的JSON有message字段，作为回复文本
-        if (jsonData.message) {
-          return { text: jsonData.message };
-        }
-        // 否则返回整个JSON作为字符串
-        return { text: JSON.stringify(jsonData, null, 2) };
-      } catch {
-        // 如果不是JSON，直接返回文本
-        return { text: data };
-      }
+      // 解析响应数据
+      const parsedText = this.parseApiResponse(rawData, apiResponseType, apiResponsePath, apiResponseFallback);
+      
+      return { text: parsedText };
     } catch (error) {
       console.error('API调用失败:', error);
       throw error;
+    }
+  }
+
+  private parseApiResponse(
+    rawData: string, 
+    responseType: string, 
+    responsePath?: string, 
+    fallback?: string
+  ): string {
+    try {
+      // 如果指定为纯文本类型，直接返回原始数据
+      if (responseType === 'text') {
+        return rawData;
+      }
+
+      // 尝试解析JSON
+      let jsonData: any;
+      try {
+        jsonData = JSON.parse(rawData);
+      } catch (parseError) {
+        // 如果强制指定为JSON但解析失败，返回fallback
+        if (responseType === 'json') {
+          console.warn('JSON解析失败:', parseError);
+          return fallback || rawData;
+        }
+        // 自动检测模式下，JSON解析失败则返回原始文本
+        return rawData;
+      }
+
+      // 如果有指定JSON路径，尝试提取特定字段
+      if (responsePath) {
+        const extractedValue = this.extractJsonPath(jsonData, responsePath);
+        if (extractedValue !== undefined && extractedValue !== null) {
+          // 如果提取的值是对象或数组，转换为JSON字符串
+          if (typeof extractedValue === 'object') {
+            return JSON.stringify(extractedValue, null, 2);
+          }
+          // 否则转换为字符串
+          return String(extractedValue);
+        }
+        // 路径提取失败，返回fallback或原始JSON
+        console.warn(`JSON路径 "${responsePath}" 未找到对应值`);
+        return fallback || JSON.stringify(jsonData, null, 2);
+      }
+
+      // 没有指定路径，尝试智能提取常见字段
+      const commonFields = ['message', 'text', 'content', 'data', 'result'];
+      for (const field of commonFields) {
+        if (jsonData[field] !== undefined && jsonData[field] !== null) {
+          if (typeof jsonData[field] === 'object') {
+            return JSON.stringify(jsonData[field], null, 2);
+          }
+          return String(jsonData[field]);
+        }
+      }
+
+      // 如果没有找到常见字段，返回整个JSON
+      return JSON.stringify(jsonData, null, 2);
+
+    } catch (error) {
+      console.error('响应解析失败:', error);
+      return fallback || rawData;
+    }
+  }
+
+  private extractJsonPath(obj: any, path: string): any {
+    try {
+      const keys = path.split('.');
+      let current = obj;
+      
+      for (const key of keys) {
+        if (current && typeof current === 'object' && key in current) {
+          current = current[key];
+        } else {
+          return undefined;
+        }
+      }
+      
+      return current;
+    } catch (error) {
+      console.error('JSON路径提取失败:', error);
+      return undefined;
     }
   }
 

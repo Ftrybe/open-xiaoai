@@ -36,6 +36,10 @@ export interface CustomRule {
     apiMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE';
     apiHeaders?: Record<string, string>;
     apiBody?: string;
+    // API响应解析配置
+    apiResponseType?: 'auto' | 'json' | 'text'; // 响应数据类型
+    apiResponsePath?: string; // JSON路径，如 "data.text" 或 "message"
+    apiResponseFallback?: string; // 解析失败时的默认文本
     // 远程代码执行
     remoteUrl?: string;
     remoteCode?: string;

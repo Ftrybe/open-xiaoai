@@ -474,7 +474,14 @@
                     
                     return terminalInfo;
                 case 'apiCall':
-                    return `API调用：${response.apiMethod} ${response.apiUrl}`;
+                    let apiInfo = `API调用：${response.apiMethod} ${response.apiUrl}`;
+                    if (response.apiResponsePath) {
+                        apiInfo += `<br>响应路径：${response.apiResponsePath}`;
+                    }
+                    if (response.apiResponseType && response.apiResponseType !== 'auto') {
+                        apiInfo += `<br>响应类型：${response.apiResponseType === 'json' ? 'JSON' : '纯文本'}`;
+                    }
+                    return apiInfo;
                 case 'pythonRemote':
                     return `Python远程执行：${response.remoteUrl}<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.remoteCode}</pre>`;
                 case 'nodeRemote':
@@ -779,6 +786,32 @@
                             <textarea id="edit-api-body" name="apiBody" rows="3" class="${inputClass}" 
                                       placeholder='{"key": "value"}'></textarea>
                         </div>
+                        <div class="bg-gray-50 p-4 rounded-lg mt-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">响应解析配置</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="edit-api-response-type" class="block text-sm font-medium text-gray-700 mb-2">响应数据类型</label>
+                                    <select id="edit-api-response-type" name="apiResponseType" class="${inputClass}">
+                                        <option value="auto">自动检测</option>
+                                        <option value="json">JSON</option>
+                                        <option value="text">纯文本</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="edit-api-response-path" class="block text-sm font-medium text-gray-700 mb-2">JSON路径（可选）</label>
+                                    <input type="text" id="edit-api-response-path" name="apiResponsePath" class="${inputClass}" 
+                                           placeholder="data.text 或 message">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label for="edit-api-response-fallback" class="block text-sm font-medium text-gray-700 mb-2">解析失败时的默认文本</label>
+                                <input type="text" id="edit-api-response-fallback" name="apiResponseFallback" class="${inputClass}" 
+                                       placeholder="API调用成功，但响应解析失败">
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500">
+                                💡 JSON路径示例：<code>data.text</code>、<code>message</code>、<code>result.content</code>
+                            </p>
+                        </div>
                     `;
                     break;
                 case 'pythonRemote':
@@ -908,10 +941,17 @@
                         const apiUrlField = document.getElementById('edit-api-url');
                         const apiHeadersField = document.getElementById('edit-api-headers');
                         const apiBodyField = document.getElementById('edit-api-body');
+                        const apiResponseTypeField = document.getElementById('edit-api-response-type');
+                        const apiResponsePathField = document.getElementById('edit-api-response-path');
+                        const apiResponseFallbackField = document.getElementById('edit-api-response-fallback');
+                        
                         if (apiMethodField) apiMethodField.value = response.apiMethod || 'GET';
                         if (apiUrlField) apiUrlField.value = response.apiUrl || '';
                         if (apiHeadersField) apiHeadersField.value = response.apiHeaders ? JSON.stringify(response.apiHeaders, null, 2) : '';
                         if (apiBodyField) apiBodyField.value = response.apiBody || '';
+                        if (apiResponseTypeField) apiResponseTypeField.value = response.apiResponseType || 'auto';
+                        if (apiResponsePathField) apiResponsePathField.value = response.apiResponsePath || '';
+                        if (apiResponseFallbackField) apiResponseFallbackField.value = response.apiResponseFallback || '';
                         break;
                     case 'pythonRemote':
                         const pythonUrlField = document.getElementById('edit-python-url');
@@ -1062,6 +1102,9 @@
                         }
                     }
                     rule.response.apiBody = formData.get('apiBody');
+                    rule.response.apiResponseType = formData.get('apiResponseType');
+                    rule.response.apiResponsePath = formData.get('apiResponsePath');
+                    rule.response.apiResponseFallback = formData.get('apiResponseFallback');
                     break;
                 case 'pythonRemote':
                     rule.response.remoteUrl = formData.get('pythonUrl');
