@@ -1,64 +1,102 @@
-FROM ubuntu:22.04 AS builder
+# ==================================
+# Multi-stage build for MiGPT project
+# ==================================
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# Builder stage: use rust image for better compatibility
+FROM rust:1.86-slim AS rust-builder
 
 WORKDIR /app
 
+# Install Node.js in Rust image
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        build-essential \
+        pkg-config \
+        libssl-dev \
+        ca-certificates && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy project files
 COPY examples/migpt .
 COPY packages/client-rust ./client-rust
 
-# 更新源
-RUN apt update && apt install curl build-essential -y
+# Enable pnpm and install dependencies
+RUN corepack enable && \
+    pnpm install
 
-# 安装 Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Fix Rust path and build
+RUN sed -i 's/\.\.\/\.\.\/packages\///g' Cargo.toml && \
+    rm -f Cargo.lock && \
+    pnpm build
 
-# Create a script file sourced by both interactive and non-interactive bash shells
-ENV BASH_ENV=/root/.bash_env
-RUN touch "$BASH_ENV"
-RUN echo '. "$BASH_ENV"' >> "$HOME/.bashrc"
-RUN echo '[ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"' >> "$BASH_ENV"
-
-# nvm
-RUN echo 'export NVM_DIR="$HOME/.nvm"' >> "$BASH_ENV"
-RUN echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' >> "$BASH_ENV"
-RUN echo '[ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"' >> "$BASH_ENV"
-
-# 安装 Node.js
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
-    && \. $NVM_DIR/nvm.sh && \. $NVM_DIR/bash_completion \
-    && nvm install 22
-
-# 安装依赖
-RUN npm install -g corepack \
-    && corepack enable && corepack install \
-    && pnpm install
-
-# 构建 Rust Server
-RUN sed -i 's/\.\.\/\.\.\/packages\///g' Cargo.toml \
-    && pnpm build
-
-
-
-    
-FROM ubuntu:22.04 AS runner
+# ==================================
+# Production stage: optimized runtime environment
+# ==================================
+FROM node:22-slim AS production
 
 WORKDIR /app
 
-COPY --from=builder /app/migpt /app/migpt
-COPY --from=builder /app/package.json /app/package.json
-COPY --from=builder /app/tsconfig.json /app/tsconfig.json
-COPY --from=builder /app/node_modules /app/node_modules
+# Install runtime dependencies and tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # SSH tools for remote execution
+        openssh-client \
+        sshpass \
+        # Text editors and utilities
+        nano \
+        # System monitoring tools
+        procps \
+        htop \
+        # Build tools (for potential runtime compilation)
+        build-essential \
+        pkg-config \
+        libssl-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# 更新源
-RUN apt update && apt install curl build-essential -y
+# Install Rust (for potential runtime recompilation)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    echo 'source $HOME/.cargo/env' >> ~/.bashrc
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-ENV NVM_DIR=/root/.nvm
+# Enable pnpm
+RUN corepack enable
 
-# 安装 Node.js
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
-    && bash -c "source $NVM_DIR/nvm.sh && nvm install 22"
+# Copy built application from builder stage
+COPY --from=rust-builder /app/migpt ./migpt
+COPY --from=rust-builder /app/package.json ./package.json
+COPY --from=rust-builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=rust-builder /app/tsconfig.json ./tsconfig.json
+COPY --from=rust-builder /app/Cargo.toml ./Cargo.toml
+COPY --from=rust-builder /app/web ./web
 
-ENTRYPOINT ["bash", "-c", "source $NVM_DIR/nvm.sh && exec \"$@\"", "--"]
+# Install production dependencies
+RUN pnpm install && \
+    pnpm store prune
 
-CMD ["npm", "run", "start"]
+# Create directories for configuration and logs
+RUN mkdir -p /app/config /app/logs
+
+# Set proper permissions
+RUN chmod +x /app/migpt/* 2>/dev/null || true
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Expose ports
+EXPOSE 3000 4399
+
+# Use bash as default shell for better compatibility
+SHELL ["/bin/bash", "-c"]
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PATH="/app/migpt:${PATH}"
+
+# Default command
+CMD ["pnpm", "start"]

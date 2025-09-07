@@ -1,0 +1,119 @@
+# ==================================
+# 加速构建的 Dockerfile
+# ==================================
+
+# Builder stage: use ubuntu for compatibility
+FROM ubuntu:22.04 AS builder
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /app
+
+# 使用阿里云镜像源加速apt下载
+RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.aliyun.com@g' /etc/apt/sources.list && \
+    sed -i 's@//.*security.ubuntu.com@//mirrors.aliyun.com@g' /etc/apt/sources.list
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        build-essential \
+        ca-certificates \
+        wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# 使用国内Rust镜像源
+ENV RUSTUP_DIST_SERVER="https://rsproxy.cn" \
+    RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+
+# Install Rust with China mirror
+RUN curl --proto '=https' --tlsv1.2 -sSf https://rsproxy.cn/rustup-init.sh | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# 配置cargo使用国内源
+RUN mkdir -p ~/.cargo && \
+    echo '[source.crates-io]' > ~/.cargo/config.toml && \
+    echo 'replace-with = "rsproxy-sparse"' >> ~/.cargo/config.toml && \
+    echo '[source.rsproxy]' >> ~/.cargo/config.toml && \
+    echo 'registry = "https://rsproxy.cn/crates.io-index"' >> ~/.cargo/config.toml && \
+    echo '[source.rsproxy-sparse]' >> ~/.cargo/config.toml && \
+    echo 'registry = "sparse+https://rsproxy.cn/index/"' >> ~/.cargo/config.toml && \
+    echo '[registries.rsproxy]' >> ~/.cargo/config.toml && \
+    echo 'index = "https://rsproxy.cn/crates.io-index"' >> ~/.cargo/config.toml && \
+    echo '[net]' >> ~/.cargo/config.toml && \
+    echo 'git-fetch-with-cli = true' >> ~/.cargo/config.toml
+
+# 使用淘宝npm镜像安装Node.js
+ENV NVM_DIR=/root/.nvm \
+    NODE_MIRROR=https://npmmirror.com/mirrors/node \
+    NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
+
+RUN curl -o- https://gitee.com/mirrors/nvm/raw/master/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install 22 \
+    && nvm use 22
+
+# Copy project files
+COPY examples/migpt .
+COPY packages/client-rust ./client-rust
+
+# 确保web目录被拷贝
+COPY examples/web ./web
+
+# 配置npm使用淘宝镜像
+RUN . $NVM_DIR/nvm.sh \
+    && npm config set registry https://registry.npmmirror.com \
+    && npm install -g corepack \
+    && corepack enable \
+    && pnpm config set registry https://registry.npmmirror.com \
+    && pnpm install --frozen-lockfile \
+    && sed -i 's/\.\.\/\.\.\/packages\///g' Cargo.toml \
+    && pnpm build
+
+# ==================================
+# Production stage with mirrors
+# ==================================
+FROM ubuntu:22.04 AS production
+
+WORKDIR /app
+
+# 使用阿里云镜像源
+RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.aliyun.com@g' /etc/apt/sources.list && \
+    sed -i 's@//.*security.ubuntu.com@//mirrors.aliyun.com@g' /etc/apt/sources.list
+
+# Install only essential runtime tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        openssh-client \
+        sshpass \
+        nano \
+        curl \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# 安装Node.js (使用国内镜像)
+ENV NODE_MIRROR=https://npmmirror.com/mirrors/node
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    npm config set registry https://registry.npmmirror.com && \
+    corepack enable && \
+    pnpm config set registry https://registry.npmmirror.com
+
+# Copy built application
+COPY --from=builder /app/migpt ./migpt
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# Install dependencies with Chinese mirror
+RUN pnpm install --frozen-lockfile && \
+    pnpm store prune
+
+# Create config directories
+RUN mkdir -p /app/config /app/logs
+
+# Expose ports
+EXPOSE 3000 4399
+
+# Start application
+CMD ["pnpm", "start"]

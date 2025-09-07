@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小爱音箱自定义消息管理</title>
+    <link href="./tailwind.css" rel="stylesheet">
+    <style>
+        /* 自定义动画和特殊样式 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal {
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-content {
+            animation: slideIn 0.3s;
+        }
+        
+        .rule-type.text { background-color: #10b981; }
+        .rule-type.audio { background-color: #3b82f6; }
+        .rule-type.localCode { background-color: #f59e0b; }
+        .rule-type.sandboxCode { background-color: #8b5cf6; }
+        .rule-type.terminalCommand { background-color: #ef4444; }
+        .rule-type.apiCall { background-color: #f97316; }
+        .rule-type.pythonRemote { background-color: #14b8a6; }
+        .rule-type.nodeRemote { background-color: #06b6d4; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+    <div class="max-w-7xl mx-auto p-5">
+        <!-- 页面标题 -->
+        <div class="bg-gradient-to-r from-primary-500 to-purple-600 text-white text-center p-8 rounded-xl mb-8 shadow-lg">
+            <h1 class="text-3xl font-bold mb-2">🎵 小爱音箱自定义消息管理</h1>
+            <p class="text-lg opacity-90">轻松管理你的小爱音箱自定义回复规则</p>
+        </div>
+        
+        <!-- 状态提示 -->
+        <div id="status" class="hidden p-4 rounded-lg mb-6 transition-all duration-300"></div>
+        
+        <!-- 标签页导航 -->
+        <div class="flex bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
+            <div class="flex-1 p-4 text-center cursor-pointer border-b-2 border-primary-500 text-primary-500 font-semibold tab active" onclick="switchTab('rules')">
+                消息规则管理
+            </div>
+            <div class="flex-1 p-4 text-center cursor-pointer border-b-2 border-transparent text-gray-500 hover:text-gray-700 tab" onclick="switchTab('settings')">
+                全局设置
+            </div>
+        </div>
+        
+        <!-- 消息规则管理 -->
+        <div id="rules-tab" class="tab-content active">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">当前消息规则</h2>
+                    <div class="space-x-3">
+                        <button onclick="addNewRule()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                            ➕ 新增规则
+                        </button>
+                        <button onclick="loadRules()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                            🔄 刷新规则
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 搜索框 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="relative flex-1 max-w-md">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input type="text" id="search-input" placeholder="搜索规则（关键词、描述或响应类型）" 
+                                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                   oninput="filterRules()">
+                        </div>
+                        <div class="ml-4 text-sm text-gray-600">
+                            <span id="rules-count">总共 0 条规则</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="rules-list" class="space-y-4">
+                    <!-- 规则列表将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 全局设置 -->
+        <div id="settings-tab" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">全局设置</h2>
+                <form id="settings-form" class="space-y-6">
+                    <div>
+                        <label for="call-keywords" class="block text-sm font-medium text-gray-700 mb-2">AI 唤醒关键词</label>
+                        <input type="text" id="call-keywords" name="callKeywords" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                               placeholder="请,你" value="请,你">
+                        <p class="mt-1 text-sm text-gray-500">用英文逗号分隔多个关键词</p>
+                    </div>
+                    <div>
+                        <label for="system-prompt" class="block text-sm font-medium text-gray-700 mb-2">系统提示词</label>
+                        <textarea id="system-prompt" name="systemPrompt" rows="4"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                  placeholder="你是一个智能助手...">你是一个智能助手，请根据用户的问题给出回答。</textarea>
+                    </div>
+                    <div>
+                        <label for="history-max-length" class="block text-sm font-medium text-gray-700 mb-2">历史消息最大数量</label>
+                        <input type="number" id="history-max-length" name="historyMaxLength" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                               value="10" min="0" max="50">
+                    </div>
+                    
+                    <!-- OpenAI 配置 -->
+                    <fieldset class="border border-gray-300 rounded-lg p-4">
+                        <legend class="text-sm font-semibold text-primary-600 px-2">🤖 OpenAI 配置</legend>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="openai-api-key" class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                                <input type="password" id="openai-api-key" name="openaiApiKey" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                       placeholder="sk-...（留空则不修改现有配置）">
+                                <p class="mt-1 text-sm text-gray-500">为了安全，保存后不会显示完整的 API Key</p>
+                            </div>
+                            <div>
+                                <label for="openai-base-url" class="block text-sm font-medium text-gray-700 mb-2">Base URL</label>
+                                <input type="url" id="openai-base-url" name="openaiBaseUrl" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                       placeholder="https://api.openai.com/v1">
+                            </div>
+                            <div>
+                                <label for="openai-model" class="block text-sm font-medium text-gray-700 mb-2">模型</label>
+                                <input type="text" id="openai-model" name="openaiModel" list="model-suggestions"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                       placeholder="输入模型名称，如：gpt-4o">
+                                <datalist id="model-suggestions">
+                                    <option value="gpt-3.5-turbo">
+                                    <option value="gpt-4">
+                                    <option value="gpt-4-turbo">
+                                    <option value="gpt-4o">
+                                    <option value="gpt-4o-mini">
+                                    <option value="claude-3-opus">
+                                    <option value="claude-3-sonnet">
+                                    <option value="claude-3-haiku">
+                                    <option value="claude-4">
+                                    <option value="deepseek-chat">
+                                    <option value="qwen-turbo">
+                                </datalist>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="flex space-x-4">
+                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                            💾 保存设置
+                        </button>
+                        <button type="button" onclick="loadSettings()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                            🔄 重新加载
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 编辑规则模态框 -->
+        <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-screen overflow-y-auto modal-content">
+                    <div class="bg-gradient-to-r from-primary-500 to-purple-600 text-white p-6 rounded-t-xl">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-bold">📝 编辑消息规则</h3>
+                            <button onclick="closeEditModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors duration-200">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <form id="edit-rule-form" class="space-y-6">
+                            <input type="hidden" id="edit-rule-id" name="ruleId">
+                            
+                            <div>
+                                <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-2">规则描述（可选）</label>
+                                <input type="text" id="edit-description" name="description" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                       placeholder="规则描述">
+                            </div>
+                            
+                            <!-- 触发条件配置 -->
+                            <fieldset class="border border-gray-300 rounded-lg p-4">
+                                <legend class="text-sm font-semibold text-primary-600 px-2">🎯 触发条件</legend>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="edit-trigger-type" class="block text-sm font-medium text-gray-700 mb-2">匹配方式</label>
+                                        <select id="edit-trigger-type" name="triggerType" 
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                            <option value="exact">精确匹配</option>
+                                            <option value="startsWith">以...开始</option>
+                                            <option value="contains">包含</option>
+                                            <option value="endsWith">以...结束</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="edit-keyword" class="block text-sm font-medium text-gray-700 mb-2">关键词</label>
+                                        <input type="text" id="edit-keyword" name="keyword" 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                               placeholder="例如：测试播放文字" required>
+                                    </div>
+                                </div>
+                            </fieldset>
+                            
+                            <!-- 响应配置 -->
+                            <fieldset class="border border-gray-300 rounded-lg p-4">
+                                <legend class="text-sm font-semibold text-primary-600 px-2">🎬 响应配置</legend>
+                                <div class="mb-4">
+                                    <label for="edit-response-type" class="block text-sm font-medium text-gray-700 mb-2">响应类型</label>
+                                    <select id="edit-response-type" name="responseType" onchange="updateEditResponseFields()"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                        <option value="text">文字回复</option>
+                                        <option value="audio">音频播放</option>
+                                        <option value="builtInCommand">内置指令</option>
+                                        <option value="localCode">本地代码执行</option>
+                                        <option value="sandboxCode">沙盒代码执行</option>
+                                        <option value="terminalCommand">终端命令执行</option>
+                                        <option value="apiCall">API接口调用</option>
+                                        <option value="pythonRemote">Python远程执行</option>
+                                        <option value="nodeRemote">Node.js远程执行</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- 动态响应字段 -->
+                                <div id="edit-response-fields" class="space-y-4">
+                                    <!-- 字段会通过JavaScript动态生成 -->
+                                </div>
+                            </fieldset>
+                            
+                            <div>
+                                <label for="edit-enabled" class="block text-sm font-medium text-gray-700 mb-2">启用状态</label>
+                                <select id="edit-enabled" name="enabled" 
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                    <option value="true">启用</option>
+                                    <option value="false">禁用</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                                <button type="button" onclick="closeEditModal()" 
+                                        class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                                    ❌ 取消
+                                </button>
+                                <button type="submit" 
+                                        class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                                    💾 保存更改
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 当前激活的标签页
+        let activeTab = 'rules';
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            // 移除所有激活状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active', 'border-primary-500', 'text-primary-500', 'font-semibold');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('active');
+            });
+            
+            // 设置新的激活状态
+            const activeTabEl = document.querySelector(`.tab:nth-child(${tabName === 'rules' ? 1 : 2})`);
+            activeTabEl.classList.add('active', 'border-primary-500', 'text-primary-500', 'font-semibold');
+            activeTabEl.classList.remove('border-transparent', 'text-gray-500');
+            
+            const activeContentEl = document.getElementById(`${tabName}-tab`);
+            activeContentEl.classList.remove('hidden');
+            activeContentEl.classList.add('active');
+            
+            activeTab = tabName;
+            
+            // 如果切换到规则管理页面，自动加载规则
+            if (tabName === 'rules') {
+                loadRules();
+            } else if (tabName === 'settings') {
+                loadSettings();
+            }
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type = 'success') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `p-4 rounded-lg mb-6 transition-all duration-300 ${
+                type === 'success' 
+                    ? 'bg-green-100 text-green-800 border border-green-300' 
+                    : 'bg-red-100 text-red-800 border border-red-300'
+            }`;
+            statusEl.classList.remove('hidden');
+            
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // 全局变量存储所有规则
+        let allRules = [];
+        
+        // 加载消息规则
+        async function loadRules() {
+            try {
+                const response = await fetch('/api/rules');
+                const rules = await response.json();
+                allRules = rules;
+                
+                displayRules(rules);
+            } catch (error) {
+                showStatus('加载规则失败：' + error.message, 'error');
+            }
+        }
+        
+        // 显示规则列表
+        function displayRules(rules) {
+            const rulesList = document.getElementById('rules-list');
+            const rulesCount = document.getElementById('rules-count');
+            
+            if (rules.length === 0) {
+                rulesList.innerHTML = '<p class="text-gray-500 text-center py-12">暂无自定义规则</p>';
+                rulesCount.textContent = '总共 0 条规则';
+                return;
+            }
+            
+            // 更新计数
+            const searchTerm = document.getElementById('search-input').value.trim();
+            if (searchTerm) {
+                rulesCount.textContent = `找到 ${rules.length} 条规则 (总共 ${allRules.length} 条)`;
+            } else {
+                rulesCount.textContent = `总共 ${rules.length} 条规则`;
+            }
+            
+            rulesList.innerHTML = rules.map(rule => `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="text-lg font-semibold text-gray-900">"${rule.trigger.keyword}"</span>
+                                <span class="rule-type ${rule.response.type} text-white text-xs px-2 py-1 rounded font-medium">
+                                    ${getRuleTypeText(rule.response.type)}
+                                </span>
+                                <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
+                                    ${getTriggerTypeText(rule.trigger.type)}
+                                </span>
+                                ${!rule.enabled ? '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded">已禁用</span>' : '<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded">已启用</span>'}
+                            </div>
+                            <div class="text-gray-600 text-sm pl-2">
+                                ${rule.description || '无描述'}
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editRule('${rule.id}')" 
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200">
+                                ✏️ 编辑
+                            </button>
+                            <button onclick="deleteRule('${rule.id}')" 
+                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200">
+                                🗑️ 删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 搜索过滤规则
+        function filterRules() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            if (!searchTerm.trim()) {
+                displayRules(allRules);
+                return;
+            }
+            
+            const filteredRules = allRules.filter(rule => {
+                const keyword = rule.trigger.keyword.toLowerCase();
+                const description = (rule.description || '').toLowerCase();
+                const responseType = getRuleTypeText(rule.response.type).toLowerCase();
+                const triggerType = getTriggerTypeText(rule.trigger.type).toLowerCase();
+                
+                return keyword.includes(searchTerm) ||
+                       description.includes(searchTerm) ||
+                       responseType.includes(searchTerm) ||
+                       triggerType.includes(searchTerm);
+            });
+            
+            displayRules(filteredRules);
+        }
+        
+        // 获取规则类型文本
+        function getRuleTypeText(type) {
+            const typeMap = {
+                'text': '文字',
+                'audio': '音频', 
+                'builtInCommand': '内置指令',
+                'localCode': '本地代码',
+                'sandboxCode': '沙盒代码',
+                'terminalCommand': '终端命令',
+                'apiCall': 'API调用',
+                'pythonRemote': 'Python远程',
+                'nodeRemote': 'Node远程'
+            };
+            return typeMap[type] || type;
+        }
+        
+        // 获取触发类型文本
+        function getTriggerTypeText(type) {
+            const typeMap = {
+                'exact': '精确匹配',
+                'startsWith': '开始于',
+                'contains': '包含',
+                'endsWith': '结束于'
+            };
+            return typeMap[type] || type;
+        }
+        
+        // 格式化规则内容
+        function formatRuleContent(rule) {
+            const response = rule.response;
+            switch (response.type) {
+                case 'text':
+                    return `回复文字：${response.text}`;
+                case 'audio':
+                    return `音频链接：${response.audioUrl}${response.audioText ? `<br>播放前文字：${response.audioText}` : ''}`;
+                case 'builtInCommand':
+                    return `内置指令：${response.builtInCommand}`;
+                case 'localCode':
+                    return `本地代码：<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.localCode}</pre>`;
+                case 'sandboxCode':
+                    return `沙盒代码：<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.sandboxCode}</pre>`;
+                case 'terminalCommand':
+                    let terminalInfo = `终端命令：<code class="bg-gray-100 px-2 py-1 rounded">${response.terminalCommand}</code><br>`;
+                    
+                    if (response.ssh) {
+                        terminalInfo += `<span class="text-blue-600">🔐 SSH远程执行</span><br>`;
+                        terminalInfo += `主机: ${response.ssh.host}:${response.ssh.port}<br>`;
+                        terminalInfo += `用户: ${response.ssh.username}<br>`;
+                        terminalInfo += `认证: ${response.ssh.authMethod === 'key' ? '密钥认证' : '密码认证'}<br>`;
+                        if (response.ssh.authMethod === 'key' && response.ssh.privateKeyPath) {
+                            terminalInfo += `私钥: ${response.ssh.privateKeyPath}<br>`;
+                        }
+                    } else {
+                        terminalInfo += `<span class="text-gray-600">💻 本地执行</span><br>`;
+                    }
+                    
+                    terminalInfo += `工作目录: ${response.terminalWorkingDir || '当前目录'}<br>`;
+                    terminalInfo += `超时: ${response.terminalTimeout || 30}秒 | 返回输出: ${response.terminalReturnOutput !== false ? '是' : '否'}`;
+                    
+                    return terminalInfo;
+                case 'apiCall':
+                    return `API调用：${response.apiMethod} ${response.apiUrl}`;
+                case 'pythonRemote':
+                    return `Python远程执行：${response.remoteUrl}<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.remoteCode}</pre>`;
+                case 'nodeRemote':
+                    return `Node远程执行：${response.remoteUrl}<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.remoteCode}</pre>`;
+                default:
+                    return '未知类型';
+            }
+        }
+        
+        // 删除规则
+        async function deleteRule(id) {
+            if (!confirm('确定要删除这条规则吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/rules/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showStatus('规则删除成功');
+                    loadRules();
+                } else {
+                    const error = await response.text();
+                    showStatus('删除失败：' + error, 'error');
+                }
+            } catch (error) {
+                showStatus('删除失败：' + error.message, 'error');
+            }
+        }
+        
+        // 添加新规则
+        function addNewRule() {
+            // 重置表单
+            document.getElementById('edit-rule-form').reset();
+            document.getElementById('edit-rule-id').value = '';
+            
+            // 设置默认值
+            document.getElementById('edit-response-type').value = 'text';
+            document.getElementById('edit-enabled').value = 'true';
+            
+            // 更新响应字段
+            updateEditResponseFields();
+            
+            // 更新模态框标题
+            document.querySelector('#edit-modal .bg-gradient-to-r h3').textContent = '➕ 添加消息规则';
+            document.querySelector('#edit-modal button[type="submit"]').textContent = '💾 添加规则';
+            
+            // 显示模态框
+            showEditModal();
+        }
+        
+        // 编辑规则
+        async function editRule(id) {
+            try {
+                const response = await fetch(`/api/rules/${id}`);
+                if (!response.ok) {
+                    throw new Error('获取规则失败');
+                }
+                
+                const rule = await response.json();
+                
+                // 更新模态框标题为编辑模式
+                document.querySelector('#edit-modal .bg-gradient-to-r h3').textContent = '📝 编辑消息规则';
+                document.querySelector('#edit-modal button[type="submit"]').textContent = '💾 保存更改';
+                
+                populateEditForm(rule);
+                showEditModal();
+                
+            } catch (error) {
+                showStatus('获取规则失败：' + error.message, 'error');
+            }
+        }
+        
+        // 填充编辑表单
+        function populateEditForm(rule) {
+            document.getElementById('edit-rule-id').value = rule.id;
+            document.getElementById('edit-description').value = rule.description || '';
+            document.getElementById('edit-trigger-type').value = rule.trigger.type;
+            document.getElementById('edit-keyword').value = rule.trigger.keyword;
+            document.getElementById('edit-response-type').value = rule.response.type;
+            document.getElementById('edit-enabled').value = rule.enabled.toString();
+            
+            // 更新响应字段显示
+            updateEditResponseFields();
+            
+            // 根据响应类型填充相应的字段
+            populateEditResponseFields(rule.response);
+        }
+        
+        // 更新编辑模式的响应字段
+        function updateEditResponseFields() {
+            const responseType = document.getElementById('edit-response-type').value;
+            const fieldsContainer = document.getElementById('edit-response-fields');
+            
+            let fieldsHTML = '';
+            const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent";
+            
+            switch (responseType) {
+                case 'text':
+                    fieldsHTML = `
+                        <div>
+                            <label for="edit-response-text" class="block text-sm font-medium text-gray-700 mb-2">回复文字</label>
+                            <textarea id="edit-response-text" name="responseText" rows="4" 
+                                      class="${inputClass}" placeholder="输入要回复的文字内容"></textarea>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input type="checkbox" id="abort-xiao-ai-enabled" name="abortXiaoAI" class="mr-2">
+                                <label for="abort-xiao-ai-enabled" class="text-sm font-medium text-blue-700">打断小爱回复</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="play-blocking-enabled" name="playBlocking" class="mr-2" checked>
+                                <label for="play-blocking-enabled" class="text-sm font-medium text-gray-700">阻塞播放</label>
+                            </div>
+                            <p class="text-xs text-gray-500">启用"打断小爱回复"后，可选择是否等待播放完毕</p>
+                        </div>
+                    `;
+                    break;
+                case 'audio':
+                    fieldsHTML = `
+                        <div>
+                            <label for="edit-audio-url" class="block text-sm font-medium text-gray-700 mb-2">音频链接</label>
+                            <input type="url" id="edit-audio-url" name="audioUrl" class="${inputClass}" 
+                                   placeholder="https://example.com/audio.mp3">
+                        </div>
+                        <div>
+                            <label for="edit-audio-text" class="block text-sm font-medium text-gray-700 mb-2">播放前的文字（可选）</label>
+                            <input type="text" id="edit-audio-text" name="audioText" class="${inputClass}" 
+                                   placeholder="即将播放音频">
+                        </div>
+                    `;
+                    break;
+                case 'builtInCommand':
+                    fieldsHTML = `
+                        <div>
+                            <label for="edit-built-in-command" class="block text-sm font-medium text-gray-700 mb-2">内置指令</label>
+                            <input type="text" id="edit-built-in-command" name="builtInCommand" class="${inputClass}" 
+                                   placeholder="开灯">
+                            <p class="mt-1 text-sm text-gray-500">小爱音箱将执行此内置指令</p>
+                        </div>
+                    `;
+                    break;
+                case 'localCode':
+                    fieldsHTML = `
+                        <div>
+                            <label for="edit-local-code" class="block text-sm font-medium text-gray-700 mb-2">JavaScript 代码</label>
+                            <textarea id="edit-local-code" name="localCode" rows="6" class="${inputClass}" 
+                                      placeholder="await engine.speaker.abortXiaoAI();"></textarea>
+                            <p class="mt-1 text-sm text-red-600">⚠️ 本地代码拥有完整系统权限，请谨慎使用</p>
+                            <p class="text-sm text-yellow-800">
+                                <strong>DEMO: </strong>
+                                <br> await engine.speaker.abortXiaoAI();
+                                <br> await sleep(2000); // 打断小爱后需要等待 2 秒，使其恢复运行后才能继续 TTS
+                                <br> await engine.speaker.play({ text: "你好，很高兴认识你！", blocking: true }); // 播放文字
+                                <br> await engine.speaker.play({ url: "https://example.com/hello.mp3" }); // 播放音频链接 
+                                <br> return { handled: true };</code>  // 告诉 MiGPT 已经处理过这条消息了，不再使用默认的 AI 回复
+                            </p>
+                        </div>
+                    `;
+                    break;
+                case 'sandboxCode':
+                    fieldsHTML = `
+                        <div>
+                            <label for="edit-sandbox-code" class="block text-sm font-medium text-gray-700 mb-2">JavaScript 代码（沙盒环境）</label>
+                            <textarea id="edit-sandbox-code" name="sandboxCode" rows="6" class="${inputClass}" 
+                                      placeholder="console.log('Hello');"></textarea>
+                            <p class="mt-1 text-sm text-blue-600">🔒 沙盒环境更安全但功能受限</p>
+                        </div>
+                    `;
+                    break;
+                case 'terminalCommand':
+                    fieldsHTML = `
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label for="edit-terminal-command" class="block text-sm font-medium text-gray-700 mb-2">终端命令</label>
+                                <textarea id="edit-terminal-command" name="terminalCommand" rows="3" class="${inputClass}" 
+                                          placeholder="ls -la&#10;echo 'Hello World'&#10;cat /etc/passwd" required></textarea>
+                                <p class="mt-1 text-sm text-gray-500">支持多行命令，每行一个命令</p>
+                            </div>
+                        </div>
+                        
+                        <!-- SSH配置 -->
+                        <div class="border border-gray-200 rounded-lg p-4 bg-blue-50">
+                            <div class="flex items-center mb-3">
+                                <input type="checkbox" id="edit-ssh-enabled" name="sshEnabled" class="mr-2" onchange="toggleSshFields()">
+                                <label for="edit-ssh-enabled" class="text-sm font-medium text-blue-700">🔐 启用SSH远程执行</label>
+                            </div>
+                            <div id="ssh-fields" class="space-y-4 hidden">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="edit-ssh-host" class="block text-sm font-medium text-gray-700 mb-2">SSH主机</label>
+                                        <input type="text" id="edit-ssh-host" name="sshHost" class="${inputClass}" 
+                                               placeholder="192.168.1.100 或 example.com">
+                                    </div>
+                                    <div>
+                                        <label for="edit-ssh-port" class="block text-sm font-medium text-gray-700 mb-2">SSH端口</label>
+                                        <input type="number" id="edit-ssh-port" name="sshPort" class="${inputClass}" 
+                                               value="22" min="1" max="65535">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="edit-ssh-username" class="block text-sm font-medium text-gray-700 mb-2">SSH用户名</label>
+                                        <input type="text" id="edit-ssh-username" name="sshUsername" class="${inputClass}" 
+                                               placeholder="root 或 ubuntu">
+                                    </div>
+                                    <div>
+                                        <label for="edit-ssh-auth-method" class="block text-sm font-medium text-gray-700 mb-2">认证方式</label>
+                                        <select id="edit-ssh-auth-method" name="sshAuthMethod" class="${inputClass}" onchange="toggleAuthFields()">
+                                            <option value="key">密钥认证</option>
+                                            <option value="password">密码认证</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="ssh-auth-fields">
+                                    <!-- 密钥认证字段 -->
+                                    <div id="ssh-key-fields" class="space-y-4">
+                                        <div>
+                                            <label for="edit-ssh-private-key-path" class="block text-sm font-medium text-gray-700 mb-2">私钥文件路径</label>
+                                            <input type="text" id="edit-ssh-private-key-path" name="sshPrivateKeyPath" class="${inputClass}" 
+                                                   placeholder="~/.ssh/id_rsa 或 /path/to/private_key">
+                                            <p class="mt-1 text-sm text-gray-500">支持相对路径和绝对路径</p>
+                                        </div>
+                                        <div>
+                                            <label for="edit-ssh-passphrase" class="block text-sm font-medium text-gray-700 mb-2">私钥密码短语（可选）</label>
+                                            <input type="password" id="edit-ssh-passphrase" name="sshPassphrase" class="${inputClass}" 
+                                                   placeholder="如果私钥有密码保护，请输入">
+                                        </div>
+                                    </div>
+                                    <!-- 密码认证字段 -->
+                                    <div id="ssh-password-fields" class="space-y-4 hidden">
+                                        <div>
+                                            <label for="edit-ssh-password" class="block text-sm font-medium text-gray-700 mb-2">SSH密码</label>
+                                            <input type="password" id="edit-ssh-password" name="sshPassword" class="${inputClass}" 
+                                                   placeholder="输入SSH登录密码">
+                                            <p class="mt-1 text-sm text-red-600">⚠️ 密码将明文存储，建议使用密钥认证</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="edit-terminal-working-dir" class="block text-sm font-medium text-gray-700 mb-2">工作目录（可选）</label>
+                                <input type="text" id="edit-terminal-working-dir" name="terminalWorkingDir" class="${inputClass}" 
+                                       placeholder="/path/to/directory">
+                            </div>
+                            <div>
+                                <label for="edit-terminal-return-output" class="block text-sm font-medium text-gray-700 mb-2">返回输出</label>
+                                <select id="edit-terminal-return-output" name="terminalReturnOutput" class="${inputClass}">
+                                    <option value="true">是 - 返回命令输出</option>
+                                    <option value="false">否 - 仅确认执行</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="edit-terminal-timeout" class="block text-sm font-medium text-gray-700 mb-2">超时时间（秒）</label>
+                                <input type="number" id="edit-terminal-timeout" name="terminalTimeout" class="${inputClass}" 
+                                       value="30" min="1" max="300">
+                            </div>
+                        </div>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
+                            <p class="text-sm text-yellow-800">
+                                <strong>⚠️ 安全提示：</strong>
+                                <br>• 本地执行：命令将在本地系统执行，具有完整权限
+                                <br>• SSH执行：命令将在远程服务器执行，请确保服务器安全
+                                <br>• 建议使用密钥认证而非密码认证
+                                <br>• 避免执行危险命令如 rm -rf 等
+                            </p>
+                        </div>
+                    `;
+                    break;
+                case 'apiCall':
+                    fieldsHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="edit-api-method" class="block text-sm font-medium text-gray-700 mb-2">请求方法</label>
+                                <select id="edit-api-method" name="apiMethod" class="${inputClass}">
+                                    <option value="GET">GET</option>
+                                    <option value="POST">POST</option>
+                                    <option value="PUT">PUT</option>
+                                    <option value="DELETE">DELETE</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="edit-api-url" class="block text-sm font-medium text-gray-700 mb-2">API地址</label>
+                                <input type="url" id="edit-api-url" name="apiUrl" class="${inputClass}" 
+                                       placeholder="https://api.example.com/endpoint">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="edit-api-headers" class="block text-sm font-medium text-gray-700 mb-2">请求头（JSON格式，可选）</label>
+                            <textarea id="edit-api-headers" name="apiHeaders" rows="3" class="${inputClass}" 
+                                      placeholder='{"Authorization": "Bearer token"}'></textarea>
+                        </div>
+                        <div>
+                            <label for="edit-api-body" class="block text-sm font-medium text-gray-700 mb-2">请求体（JSON格式，仅POST/PUT）</label>
+                            <textarea id="edit-api-body" name="apiBody" rows="3" class="${inputClass}" 
+                                      placeholder='{"key": "value"}'></textarea>
+                        </div>
+                    `;
+                    break;
+                case 'pythonRemote':
+                    fieldsHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="edit-python-url" class="block text-sm font-medium text-gray-700 mb-2">远程执行服务地址</label>
+                                <input type="url" id="edit-python-url" name="pythonUrl" class="${inputClass}" 
+                                       placeholder="https://your-python-executor.com/execute">
+                            </div>
+                            <div>
+                                <label for="edit-python-timeout" class="block text-sm font-medium text-gray-700 mb-2">超时时间（秒）</label>
+                                <input type="number" id="edit-python-timeout" name="pythonTimeout" class="${inputClass}" 
+                                       value="30" min="1" max="300">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="edit-python-code" class="block text-sm font-medium text-gray-700 mb-2">Python 代码</label>
+                            <textarea id="edit-python-code" name="pythonCode" rows="6" class="${inputClass}" 
+                                      placeholder="print('Hello Python')"></textarea>
+                        </div>
+                    `;
+                    break;
+                case 'nodeRemote':
+                    fieldsHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="edit-node-url" class="block text-sm font-medium text-gray-700 mb-2">远程执行服务地址</label>
+                                <input type="url" id="edit-node-url" name="nodeUrl" class="${inputClass}" 
+                                       placeholder="https://your-node-executor.com/execute">
+                            </div>
+                            <div>
+                                <label for="edit-node-timeout" class="block text-sm font-medium text-gray-700 mb-2">超时时间（秒）</label>
+                                <input type="number" id="edit-node-timeout" name="nodeTimeout" class="${inputClass}" 
+                                       value="30" min="1" max="300">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="edit-node-code" class="block text-sm font-medium text-gray-700 mb-2">Node.js 代码</label>
+                            <textarea id="edit-node-code" name="nodeCode" rows="6" class="${inputClass}" 
+                                      placeholder="console.log('Hello Node');"></textarea>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            fieldsContainer.innerHTML = fieldsHTML;
+        }
+        
+        // 填充编辑响应字段
+        function populateEditResponseFields(response) {
+            setTimeout(() => {
+                switch (response.type) {
+                    case 'text':
+                        const textField = document.getElementById('edit-response-text');
+                        const abortXiaoAIField = document.getElementById('abort-xiao-ai-enabled');
+                        const playBlockingField = document.getElementById('play-blocking-enabled');
+
+                        if (abortXiaoAIField) abortXiaoAIField.checked = response.abortXiaoAI || false;
+                        if (playBlockingField) playBlockingField.checked = response.playBlocking !== false; // 默认为true
+                        if (textField) textField.value = response.text || '';
+                        break;
+                    case 'audio':
+                        const audioUrlField = document.getElementById('edit-audio-url');
+                        const audioTextField = document.getElementById('edit-audio-text');
+                        if (audioUrlField) audioUrlField.value = response.audioUrl || '';
+                        if (audioTextField) audioTextField.value = response.audioText || '';
+                        break;
+                    case 'builtInCommand':
+                        const builtInCommandField = document.getElementById('edit-built-in-command');
+                        if (builtInCommandField) builtInCommandField.value = response.builtInCommand || '';
+                        break;
+                    case 'localCode':
+                        const localCodeField = document.getElementById('edit-local-code');
+                        if (localCodeField) localCodeField.value = response.localCode || '';
+                        break;
+                    case 'sandboxCode':
+                        const sandboxCodeField = document.getElementById('edit-sandbox-code');
+                        if (sandboxCodeField) sandboxCodeField.value = response.sandboxCode || '';
+                        break;
+                    case 'terminalCommand':
+                        const terminalCommandField = document.getElementById('edit-terminal-command');
+                        const terminalWorkingDirField = document.getElementById('edit-terminal-working-dir');
+                        const terminalTimeoutField = document.getElementById('edit-terminal-timeout');
+                        const terminalReturnOutputField = document.getElementById('edit-terminal-return-output');
+                        
+                        // 基础字段
+                        if (terminalCommandField) terminalCommandField.value = response.terminalCommand || '';
+                        if (terminalWorkingDirField) terminalWorkingDirField.value = response.terminalWorkingDir || '';
+                        if (terminalTimeoutField) terminalTimeoutField.value = response.terminalTimeout || 30;
+                        if (terminalReturnOutputField) terminalReturnOutputField.value = (response.terminalReturnOutput !== false).toString();
+                        
+                        // SSH配置字段
+                        const sshEnabledField = document.getElementById('edit-ssh-enabled');
+                        const sshHostField = document.getElementById('edit-ssh-host');
+                        const sshPortField = document.getElementById('edit-ssh-port');
+                        const sshUsernameField = document.getElementById('edit-ssh-username');
+                        const sshAuthMethodField = document.getElementById('edit-ssh-auth-method');
+                        const sshPrivateKeyPathField = document.getElementById('edit-ssh-private-key-path');
+                        const sshPassphraseField = document.getElementById('edit-ssh-passphrase');
+                        const sshPasswordField = document.getElementById('edit-ssh-password');
+                        
+                        if (response.ssh) {
+                            if (sshEnabledField) {
+                                sshEnabledField.checked = true;
+                                toggleSshFields(); // 显示SSH字段
+                            }
+                            if (sshHostField) sshHostField.value = response.ssh.host || '';
+                            if (sshPortField) sshPortField.value = response.ssh.port || 22;
+                            if (sshUsernameField) sshUsernameField.value = response.ssh.username || '';
+                            if (sshAuthMethodField) {
+                                sshAuthMethodField.value = response.ssh.authMethod || 'key';
+                                toggleAuthFields(); // 显示对应的认证字段
+                            }
+                            if (sshPrivateKeyPathField) sshPrivateKeyPathField.value = response.ssh.privateKeyPath || '';
+                            if (sshPassphraseField) sshPassphraseField.value = response.ssh.passphrase || '';
+                            if (sshPasswordField) sshPasswordField.value = response.ssh.password || '';
+                        } else {
+                            if (sshEnabledField) {
+                                sshEnabledField.checked = false;
+                                toggleSshFields(); // 隐藏SSH字段
+                            }
+                        }
+                        break;
+                    case 'apiCall':
+                        const apiMethodField = document.getElementById('edit-api-method');
+                        const apiUrlField = document.getElementById('edit-api-url');
+                        const apiHeadersField = document.getElementById('edit-api-headers');
+                        const apiBodyField = document.getElementById('edit-api-body');
+                        if (apiMethodField) apiMethodField.value = response.apiMethod || 'GET';
+                        if (apiUrlField) apiUrlField.value = response.apiUrl || '';
+                        if (apiHeadersField) apiHeadersField.value = response.apiHeaders ? JSON.stringify(response.apiHeaders, null, 2) : '';
+                        if (apiBodyField) apiBodyField.value = response.apiBody || '';
+                        break;
+                    case 'pythonRemote':
+                        const pythonUrlField = document.getElementById('edit-python-url');
+                        const pythonCodeField = document.getElementById('edit-python-code');
+                        const pythonTimeoutField = document.getElementById('edit-python-timeout');
+                        if (pythonUrlField) pythonUrlField.value = response.remoteUrl || '';
+                        if (pythonCodeField) pythonCodeField.value = response.remoteCode || '';
+                        if (pythonTimeoutField) pythonTimeoutField.value = response.remoteTimeout || 30;
+                        break;
+                    case 'nodeRemote':
+                        const nodeUrlField = document.getElementById('edit-node-url');
+                        const nodeCodeField = document.getElementById('edit-node-code');
+                        const nodeTimeoutField = document.getElementById('edit-node-timeout');
+                        if (nodeUrlField) nodeUrlField.value = response.remoteUrl || '';
+                        if (nodeCodeField) nodeCodeField.value = response.remoteCode || '';
+                        if (nodeTimeoutField) nodeTimeoutField.value = response.remoteTimeout || 30;
+                        break;
+                }
+            }, 100);
+        }
+        
+        // 显示编辑模态框
+        function showEditModal() {
+            document.getElementById('edit-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // 关闭编辑模态框
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        
+        // 加载全局设置
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+                
+                document.getElementById('call-keywords').value = settings.callAIKeywords?.join(',') || '';
+                document.getElementById('system-prompt').value = settings.systemPrompt || '';
+                document.getElementById('history-max-length').value = settings.historyMaxLength || 10;
+                
+                // OpenAI 设置
+                // API Key 不显示完整内容，只显示占位符或前几位
+                const apiKeyField = document.getElementById('openai-api-key');
+                if (settings.openai?.apiKey) {
+                    apiKeyField.placeholder = '••••••••' + settings.openai.apiKey.slice(-4);
+                    apiKeyField.value = ''; // 不显示完整的 API Key
+                } else {
+                    apiKeyField.placeholder = 'sk-...（留空则不修改现有配置）';
+                }
+                
+                document.getElementById('openai-base-url').value = settings.openai?.baseUrl || 'https://api.openai.com/v1';
+                document.getElementById('openai-model').value = settings.openai?.model || 'gpt-3.5-turbo';
+                
+            } catch (error) {
+                showStatus('加载设置失败：' + error.message, 'error');
+            }
+        }
+        
+        // 编辑规则表单提交
+        document.getElementById('edit-rule-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const ruleId = formData.get('ruleId');
+            
+            // 构建规则结构
+            const rule = {
+                trigger: {
+                    type: formData.get('triggerType'),
+                    keyword: formData.get('keyword')
+                },
+                response: {
+                    type: formData.get('responseType')
+                },
+                enabled: formData.get('enabled') === 'true',
+                description: formData.get('description')
+            };
+            
+            // 根据响应类型添加对应字段
+            const responseType = rule.response.type;
+            switch (responseType) {
+                case 'text':
+                    rule.response.text = formData.get('responseText');
+                    rule.response.abortXiaoAI = formData.get('abortXiaoAI') === 'on';
+                    rule.response.playBlocking = formData.get('playBlocking') === 'on';
+                    break;
+                case 'audio':
+                    rule.response.audioUrl = formData.get('audioUrl');
+                    rule.response.audioText = formData.get('audioText');
+                    break;
+                case 'builtInCommand':
+                    rule.response.builtInCommand = formData.get('builtInCommand');
+                    break;
+                case 'localCode':
+                    rule.response.localCode = formData.get('localCode');
+                    break;
+                case 'sandboxCode':
+                    rule.response.sandboxCode = formData.get('sandboxCode');
+                    break;
+                case 'terminalCommand':
+                    rule.response.terminalCommand = formData.get('terminalCommand');
+                    rule.response.terminalWorkingDir = formData.get('terminalWorkingDir');
+                    rule.response.terminalTimeout = parseInt(formData.get('terminalTimeout')) || 30;
+                    rule.response.terminalReturnOutput = formData.get('terminalReturnOutput') === 'true';
+                    
+                    // SSH配置处理
+                    if (formData.get('sshEnabled') === 'on') {
+                        rule.response.ssh = {
+                            host: formData.get('sshHost'),
+                            port: parseInt(formData.get('sshPort')) || 22,
+                            username: formData.get('sshUsername'),
+                            authMethod: formData.get('sshAuthMethod') || 'key'
+                        };
+                        
+                        if (rule.response.ssh.authMethod === 'key') {
+                            rule.response.ssh.privateKeyPath = formData.get('sshPrivateKeyPath');
+                            rule.response.ssh.passphrase = formData.get('sshPassphrase');
+                        } else {
+                            rule.response.ssh.password = formData.get('sshPassword');
+                        }
+                        
+                        // 验证SSH必填字段
+                        if (!rule.response.ssh.host || !rule.response.ssh.username) {
+                            return showStatus('SSH配置不完整：请填写主机和用户名', 'error');
+                        }
+                        
+                        if (rule.response.ssh.authMethod === 'key' && !rule.response.ssh.privateKeyPath) {
+                            return showStatus('SSH配置不完整：请填写私钥文件路径', 'error');
+                        }
+                        
+                        if (rule.response.ssh.authMethod === 'password' && !rule.response.ssh.password) {
+                            return showStatus('SSH配置不完整：请填写密码', 'error');
+                        }
+                    }
+                    break;
+                case 'apiCall':
+                    rule.response.apiUrl = formData.get('apiUrl');
+                    rule.response.apiMethod = formData.get('apiMethod');
+                    const headersText = formData.get('apiHeaders');
+                    if (headersText) {
+                        try {
+                            rule.response.apiHeaders = JSON.parse(headersText);
+                        } catch (e) {
+                            return showStatus('API请求头格式错误，请使用有效的JSON格式', 'error');
+                        }
+                    }
+                    rule.response.apiBody = formData.get('apiBody');
+                    break;
+                case 'pythonRemote':
+                    rule.response.remoteUrl = formData.get('pythonUrl');
+                    rule.response.remoteCode = formData.get('pythonCode');
+                    rule.response.remoteTimeout = parseInt(formData.get('pythonTimeout'));
+                    break;
+                case 'nodeRemote':
+                    rule.response.remoteUrl = formData.get('nodeUrl');
+                    rule.response.remoteCode = formData.get('nodeCode');
+                    rule.response.remoteTimeout = parseInt(formData.get('nodeTimeout'));
+                    break;
+            }
+            
+            try {
+                let response, successMessage;
+                
+                if (ruleId) {
+                    // 编辑现有规则
+                    response = await fetch(`/api/rules/${ruleId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(rule)
+                    });
+                    successMessage = '规则更新成功';
+                } else {
+                    // 添加新规则
+                    response = await fetch('/api/rules', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(rule)
+                    });
+                    successMessage = '规则添加成功';
+                }
+                
+                if (response.ok) {
+                    showStatus(successMessage);
+                    closeEditModal();
+                    loadRules(); // 刷新规则列表
+                } else {
+                    const error = await response.text();
+                    showStatus(`操作失败：${error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`操作失败：${error.message}`, 'error');
+            }
+        });
+        
+        // 设置表单提交
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const settings = {
+                callAIKeywords: formData.get('callKeywords').split(',').map(k => k.trim()).filter(k => k),
+                systemPrompt: formData.get('systemPrompt'),
+                historyMaxLength: parseInt(formData.get('historyMaxLength'))
+            };
+            
+            // OpenAI 设置
+            const openaiSettings = {};
+            
+            // API Key - 如果不为空才添加到设置中
+            const apiKey = formData.get('openaiApiKey');
+            if (apiKey && apiKey.trim() !== '') {
+                openaiSettings.apiKey = apiKey.trim();
+            }
+            
+            // 其他 OpenAI 设置
+            const baseUrl = formData.get('openaiBaseUrl');
+            if (baseUrl && baseUrl.trim() !== '') {
+                openaiSettings.baseUrl = baseUrl.trim();
+            }
+            
+            openaiSettings.model = formData.get('openaiModel') || 'gpt-3.5-turbo';
+            
+            // 只有当有 OpenAI 设置时才添加到主设置对象
+            if (Object.keys(openaiSettings).length > 0) {
+                settings.openai = openaiSettings;
+            }
+            
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    showStatus('设置保存成功');
+                    // 重新加载设置以更新 API Key 的显示
+                    loadSettings();
+                } else {
+                    const error = await response.text();
+                    showStatus('保存失败：' + error, 'error');
+                }
+            } catch (error) {
+                showStatus('保存失败：' + error.message, 'error');
+            }
+        });
+        
+        // 页面加载时自动加载规则
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRules();
+            
+            // 模态框外部点击关闭
+            document.getElementById('edit-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'edit-modal') {
+                    closeEditModal();
+                }
+            });
+            
+            // ESC键关闭模态框
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeEditModal();
+                }
+            });
+        });
+        
+        // 切换SSH字段显示/隐藏
+        function toggleSshFields() {
+            const sshEnabled = document.getElementById('edit-ssh-enabled')?.checked || false;
+            const sshFields = document.getElementById('ssh-fields');
+            
+            if (sshFields) {
+                if (sshEnabled) {
+                    sshFields.classList.remove('hidden');
+                } else {
+                    sshFields.classList.add('hidden');
+                }
+            }
+        }
+        
+        // 切换SSH认证方式字段
+        function toggleAuthFields() {
+            const authMethod = document.getElementById('edit-ssh-auth-method')?.value;
+            const keyFields = document.getElementById('ssh-key-fields');
+            const passwordFields = document.getElementById('ssh-password-fields');
+            
+            if (keyFields && passwordFields) {
+                if (authMethod === 'key') {
+                    keyFields.classList.remove('hidden');
+                    passwordFields.classList.add('hidden');
+                } else {
+                    keyFields.classList.add('hidden');
+                    passwordFields.classList.remove('hidden');
+                }
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 页面初始化完成
+        });
+    </script>
+</body>
+</html>

@@ -6,18 +6,26 @@
   "type": "module",
   "scripts": {
     "build": "cargo-cp-artifact -ac open_xiaoai_server migpt/open-xiaoai.node -- cargo build --release --message-format=json-render-diagnostics",
+    "build-css": "npx tailwindcss -i web/input.css -o web/tailwind.css --watch",
+    "build-css-prod": "npx tailwindcss -i web/input.css -o web/tailwind.css --minify",
     "start": "tsx migpt/index.ts",
-    "dev": "pnpm build && pnpm start"
+    "dev": "pnpm build && concurrently \"pnpm build-css\" \"pnpm start\"",
+    "remote-executor": "tsx migpt/remote-executor.ts",
+    "dev-with-executor": "concurrently \"pnpm remote-executor\" \"pnpm build-css\" \"pnpm start\""
   },
   "dependencies": {
     "@mi-gpt/engine": "1.2.1",
-    "@mi-gpt/utils": "1.1.1"
+    "@mi-gpt/utils": "1.1.1",
+    "@types/express": "^5.0.3",
+    "express": "^5.1.0"
   },
   "devDependencies": {
     "@mi-gpt/config": "1.1.0",
     "@neon-rs/cli": "0.1.82",
     "@types/node": "^22.13.11",
     "cargo-cp-artifact": "^0.1.9",
+    "concurrently": "^8.2.2",
+    "tailwindcss": "^3.4.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   },

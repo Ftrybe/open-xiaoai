@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  migpt-dev:
+    build:
+      context: ../../
+      dockerfile: examples/migpt/Dockerfile
+      target: production  # 或者可以创建一个开发专用的target
+    container_name: migpt-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Web管理界面
+      - "4399:4399"  # 小爱音响连接端口
+      - "9229:9229"  # Node.js调试端口
+    volumes:
+      # 配置文件映射
+      - ./config.ts:/app/config.ts
+      - ./custom-rules.json:/app/custom-rules.json
+      - ./custom-settings.json:/app/custom-settings.json
+      
+      # 开发时源码热重载
+      - ./migpt:/app/migpt
+      - ./src:/app/src
+      - ./web:/app/web
+      
+      # 日志和数据
+      - ./logs:/app/logs
+      - ./data:/app/data
+      
+      # SSH密钥
+      - ~/.ssh:/root/.ssh:ro
+      
+      # Node modules缓存（提升性能）
+      - node_modules_cache:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - TZ=Asia/Shanghai
+      - DEBUG=migpt:*
+    networks:
+      - migpt-dev-network
+    command: ["pnpm", "dev"]  # 开发模式启动
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  migpt-dev-network:
+    driver: bridge
+    name: migpt-dev-network
+
+volumes:
+  node_modules_cache:

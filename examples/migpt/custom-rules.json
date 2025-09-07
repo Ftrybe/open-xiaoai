@@ -1,0 +1,18 @@
+[
+  {
+    "trigger": {
+      "type": "exact",
+      "keyword": "开机"
+    },
+    "response": {
+      "type": "text",
+      "text": "22",
+      "abortXiaoAI": true
+    },
+    "enabled": true,
+    "description": "终端",
+    "id": "160d0a9a-342c-497b-9e12-0e6654d85b93",
+    "createdAt": 1756864364640,
+    "updatedAt": 1757165359977
+  }
+]

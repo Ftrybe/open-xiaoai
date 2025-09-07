@@ -28,6 +28,3 @@ examples/migpt/migpt/open-xiaoai.node
 !examples/xiaozhi/.python-version
 !examples/xiaozhi/requirements.txt
 !examples/xiaozhi/pyproject.toml
-
-# Web前端文件
-!examples/migpt/web

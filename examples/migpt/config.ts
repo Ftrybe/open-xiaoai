@@ -1,5 +1,6 @@
 import { sleep } from "@mi-gpt/utils";
 import { OpenXiaoAIConfig } from "./migpt/xiaoai.js";
+import { dynamicConfig } from "./migpt/dynamic-config.js";
 
 export const kOpenXiaoAIConfig: OpenXiaoAIConfig = {
   openai: {
@@ -13,60 +14,59 @@ export const kOpenXiaoAIConfig: OpenXiaoAIConfig = {
      * - ❌ https://api.openai.com/v1/（最后多了一个 /
      * - ❌ https://api.openai.com/v1/chat/completions（不需要加 /chat/completions）
      */
-    baseURL: "https://api.openai.com/v1",
+    get baseURL() {
+      return dynamicConfig.getOpenAIBaseURL() || "https://api.openai.com/v1";
+    },
     /**
      * API 密钥
      */
-    apiKey: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    get apiKey() {
+      return dynamicConfig.getOpenAIApiKey() || "sk-xxxxxxxxxx";
+    },
     /**
      * 模型名称
      */
-    model: "gpt-4.1-mini",
+    get model() {
+      return dynamicConfig.getOpenAIModel() || "deepseek-chat";
+    },
   },
   prompt: {
     /**
      * 系统提示词，如需关闭可设置为：''（空字符串）
+     * 现在从Web界面的设置中动态读取
      */
-    system: "你是一个智能助手，请根据用户的问题给出回答。",
+    get system() {
+      return dynamicConfig.getSystemPrompt();
+    },
   },
   context: {
     /**
      * 每次对话携带的最大历史消息数（如需关闭可设置为：0）
+     * 现在从Web界面的设置中动态读取
      */
-    historyMaxLength: 10,
+    get historyMaxLength() {
+      return dynamicConfig.getHistoryMaxLength();
+    },
   },
   /**
    * 只回答以下关键词开头的消息：
-   *
-   * - 请问地球为什么是圆的？
-   * - 你知道世界上跑的最快的动物是什么吗？
+   * 现在从Web界面的设置中动态读取
    */
-  callAIKeywords: ["请", "你"],
+  get callAIKeywords() {
+    return dynamicConfig.getCallAIKeywords();
+  },
   /**
    * 自定义消息回复
+   * 现在支持从Web界面动态配置的规则
    */
   async onMessage(engine, { text }) {
-    if (text === "测试播放文字") {
-      return { text: "你好，很高兴认识你！" };
+    // 首先尝试处理动态配置的规则
+    const dynamicResult = await dynamicConfig.handleCustomMessage(engine, { text });
+    if (dynamicResult) {
+      return dynamicResult;
     }
 
-    if (text === "测试播放音乐") {
-      return { url: "https://example.com/hello.mp3" };
-    }
-
-    if (text === "测试其他能力") {
-      // 打断原来小爱的回复
-      await engine.speaker.abortXiaoAI();
-
-      // 播放文字
-      await sleep(2000); // 打断小爱后需要等待 2 秒，使其恢复运行后才能继续 TTS
-      await engine.speaker.play({ text: "你好，很高兴认识你！", blocking: true });
-
-      // 播放音频链接
-      await engine.speaker.play({ url: "https://example.com/hello.mp3" });
-
-      // 告诉 MiGPT 已经处理过这条消息了，不再使用默认的 AI 回复
-      return { handled: true };
-    }
+    // 没有匹配的规则，返回null让系统继续默认处理
+    return null;
   },
 };
