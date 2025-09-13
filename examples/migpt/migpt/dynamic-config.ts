@@ -9,6 +9,21 @@ import { homedir } from 'node:os';
 
 const execAsync = promisify(exec);
 
+// 备用sleep函数，以防导入失败
+const fallbackSleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// 安全的sleep函数，优先使用导入的版本，否则使用备用版本
+const safeSleep = async (ms: number) => {
+  try {
+    if (typeof sleep === 'function') {
+      return await sleep(ms);
+    }
+  } catch (error) {
+    console.warn('使用导入的sleep函数失败，使用备用版本:', error);
+  }
+  return await fallbackSleep(ms);
+};
+
 export class DynamicConfig {
   private static instance: DynamicConfig;
   private rules: CustomRule[] = [];
@@ -67,6 +82,20 @@ export class DynamicConfig {
 
     console.log(`🎯 匹配到自定义规则: "${rule.trigger.keyword}" (${rule.trigger.type}) -> ${rule.response.type}`);
 
+    // 验证engine对象的可用性
+    if (!engine) {
+      console.error('❌ 致命错误：Engine对象为空');
+      return { text: '系统错误：Engine对象不可用' };
+    }
+    
+    if (!engine.speaker) {
+      console.error('❌ 致命错误：Speaker对象不可用');
+      console.log('🔍 Engine对象内容:', Object.keys(engine));
+      return { text: '系统错误：Speaker对象不可用' };
+    }
+    
+    console.log('✅ Engine和Speaker对象验证通过');
+
     try {
       switch (rule.response.type) {
         case 'text':
@@ -76,7 +105,7 @@ export class DynamicConfig {
             await engine.speaker.abortXiaoAI();
             
             // 播放文字
-            await sleep(2000); // 打断小爱后需要等待 2 秒，使其恢复运行后才能继续 TTS
+            await safeSleep(2000); // 打断小爱后需要等待 2 秒，使其恢复运行后才能继续 TTS
             
             const blocking = rule.response.playBlocking !== false; // 默认阻塞
             await engine.speaker.play({ text: rule.response.text, blocking });
@@ -90,22 +119,38 @@ export class DynamicConfig {
         case 'builtInCommand':
           // 执行内置指令
           if (rule.response.builtInCommand) {
-            // 检查是否启用了打断小爱回复
-            if (rule.response.abortXiaoAI) {
-              await engine.speaker.abortXiaoAI();
-              await sleep(2000);
+            console.log('🎯 执行内置指令:', rule.response.builtInCommand);
+            
+            // 检查engine和speaker对象是否可用
+            if (!engine || !engine.speaker) {
+              console.error('❌ Engine或Speaker对象不可用');
+              return { text: '执行失败：系统对象不可用' };
             }
             
-            // 执行内置指令（比如开灯关灯等）
-            await engine.speaker.askXiaoAI(rule.response.builtInCommand, { silent: true });
-            
-            return { handled: true };
+            try {
+              // 检查是否启用了打断小爱回复
+              if (rule.response.abortXiaoAI) {
+                console.log('🛑 打断小爱回复...');
+                await engine.speaker.abortXiaoAI();
+                await safeSleep(2000);
+              }
+              
+              // 执行内置指令（比如开灯关灯等）
+              console.log('📢 发送内置指令给小爱:', rule.response.builtInCommand);
+              await engine.speaker.askXiaoAI(rule.response.builtInCommand, { silent: true });
+              console.log('✅ 内置指令执行完成');
+              
+              return { handled: true };
+            } catch (error: any) {
+              console.error('❌ 内置指令执行失败:', error);
+              return { text: `内置指令执行失败: ${error?.message || '未知错误'}` };
+            }
           }
           return null;
 
         case 'audio':
           await engine.speaker.abortXiaoAI();
-          await sleep(2000);
+          await safeSleep(2000);
           
           if (rule.response.audioText) {
             await engine.speaker.play({ text: rule.response.audioText, blocking: true });
@@ -165,18 +210,39 @@ export class DynamicConfig {
   private async executeLocalCode(engine: any, code?: string): Promise<any> {
     if (!code) return { handled: true };
     
+    console.log('🔧 执行本地代码:', code.substring(0, 100) + (code.length > 100 ? '...' : ''));
+    
     try {
+      // 检查engine对象是否可用
+      if (!engine) {
+        console.error('❌ Engine对象不可用');
+        return { text: '执行失败：Engine对象不可用' };
+      }
+      
+      if (!engine.speaker) {
+        console.error('❌ Speaker对象不可用');
+        return { text: '执行失败：Speaker对象不可用' };
+      }
+      
       const asyncFunction = new Function('engine', 'sleep', `
         return (async () => {
           ${code}
         })();
       `);
       
-      const result = await asyncFunction(engine, sleep);
+      console.log('✅ 本地代码函数创建成功，开始执行...');
+      const result = await asyncFunction(engine, safeSleep);
+      console.log('✅ 本地代码执行完成，结果:', result);
+      
       return result || { handled: true };
-    } catch (error) {
-      console.error('执行本地代码时出错:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('❌ 执行本地代码时出错:', error);
+      console.error('错误详情:', {
+        message: error?.message || '未知错误',
+        stack: error?.stack || '无堆栈信息',
+        name: error?.name || '未知错误类型'
+      });
+      return { text: `本地代码执行失败: ${error?.message || '未知错误'}` };
     }
   }
 
