@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  migpt:
+    image: migpt-migpt
+    container_name: migpt-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Web管理界面
+      - "4399:4399"  # 小爱音响连接端口
+    volumes:
+      # 核心配置文件映射
+      - ./config.ts:/app/config.ts
+      - ./custom-rules.json:/app/custom-rules.json
+      - ./custom-settings.json:/app/custom-settings.json
+      
+      # 日志和数据目录
+      - ./logs:/app/logs
+    
+      
+      # SSH密钥目录（如果使用SSH远程执行功能）
+      - ~/.ssh:/root/.ssh:ro
+      
+      # 可选：开发时源码映射（取消注释用于开发）
+      # - ./migpt:/app/migpt
+      # - ./src:/app/src
+    # 环境变量
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+      - DEBUG=*
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # 标准输入输出
+    stdin_open: true
+    tty: true
+    networks:
+      - migpt-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # 可选：资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # 可选：Redis缓存服务
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: migpt-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - migpt-network
+  #   command: redis-server --appendonly yes
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M
+  #         cpus: '0.5'
+
+  # 可选：数据库服务
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: migpt-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: migpt
+  #     POSTGRES_USER: migpt
+  #     POSTGRES_PASSWORD: migpt_password
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - migpt-network
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 512M
+
+networks:
+  migpt-network:
+    driver: bridge
+    name: migpt-network
+
+# 数据卷定义
+volumes:
+  # redis-data:
+  # postgres-data:
+  logs:
+    driver: local
+  data:
+    driver: local

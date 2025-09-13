@@ -5,14 +5,13 @@
       "keyword": "开机"
     },
     "response": {
-      "type": "text",
-      "text": "22",
-      "abortXiaoAI": true
+      "type": "localCode",
+      "localCode": "await engine.speaker.abortXiaoAI();\nawait sleep(2000); // 打断小爱后需要等待 2 秒，使其恢复运行后才能继续 TTS\nawait engine.speaker.play({ text: \"你好，很高兴认识你！\", blocking: true }); // 播放文字\nawait engine.speaker.play({ url: \"https://example.com/hello.mp3\" }); // 播放音频链接\nreturn { handled: true }; // 告诉 MiGPT 已经处理过这条消息了，不再使用默认的 AI 回复"
     },
     "enabled": true,
     "description": "终端",
     "id": "160d0a9a-342c-497b-9e12-0e6654d85b93",
     "createdAt": 1756864364640,
-    "updatedAt": 1757165359977
+    "updatedAt": 1757776539205
   }
 ]
