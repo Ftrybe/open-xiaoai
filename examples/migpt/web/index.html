@@ -35,37 +35,37 @@
         .rule-type.nodeRemote { background-color: #06b6d4; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800">
-    <div class="max-w-7xl mx-auto p-5">
+<body class="font-sans text-gray-800 bg-gray-100">
+    <div class="p-5 mx-auto max-w-7xl">
         <!-- 页面标题 -->
-        <div class="bg-gradient-to-r from-primary-500 to-purple-600 text-white text-center p-8 rounded-xl mb-8 shadow-lg">
-            <h1 class="text-3xl font-bold mb-2">🎵 小爱音箱自定义消息管理</h1>
+        <div class="p-8 mb-8 text-center text-white shadow-lg bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl">
+            <h1 class="mb-2 text-3xl font-bold">🎵 小爱音箱自定义消息管理</h1>
             <p class="text-lg opacity-90">轻松管理你的小爱音箱自定义回复规则</p>
         </div>
         
         <!-- 状态提示 -->
-        <div id="status" class="hidden p-4 rounded-lg mb-6 transition-all duration-300"></div>
+        <div id="status" class="hidden p-4 mb-6 transition-all duration-300 rounded-lg"></div>
         
         <!-- 标签页导航 -->
-        <div class="flex bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
-            <div class="flex-1 p-4 text-center cursor-pointer border-b-2 border-primary-500 text-primary-500 font-semibold tab active" onclick="switchTab('rules')">
+        <div class="flex mb-6 overflow-hidden bg-white rounded-lg shadow-sm">
+            <div class="flex-1 p-4 font-semibold text-center border-b-2 cursor-pointer border-primary-500 text-primary-500 tab active" onclick="switchTab('rules')">
                 消息规则管理
             </div>
-            <div class="flex-1 p-4 text-center cursor-pointer border-b-2 border-transparent text-gray-500 hover:text-gray-700 tab" onclick="switchTab('settings')">
+            <div class="flex-1 p-4 text-center text-gray-500 border-b-2 border-transparent cursor-pointer hover:text-gray-700 tab" onclick="switchTab('settings')">
                 全局设置
             </div>
         </div>
         
         <!-- 消息规则管理 -->
         <div id="rules-tab" class="tab-content active">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-6">
+            <div class="p-6 bg-white shadow-lg rounded-xl">
+                <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">当前消息规则</h2>
                     <div class="space-x-3">
-                        <button onclick="addNewRule()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                        <button onclick="addNewRule()" class="px-4 py-2 font-medium text-white transition-colors duration-200 bg-green-500 rounded-lg hover:bg-green-600">
                             ➕ 新增规则
                         </button>
-                        <button onclick="loadRules()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                        <button onclick="loadRules()" class="px-4 py-2 font-medium text-white transition-colors duration-200 bg-gray-500 rounded-lg hover:bg-gray-600">
                             🔄 刷新规则
                         </button>
                     </div>
@@ -73,15 +73,15 @@
                 
                 <!-- 搜索框 -->
                 <div class="mb-6">
-                    <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center justify-between mb-3">
                         <div class="relative flex-1 max-w-md">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
                             <input type="text" id="search-input" placeholder="搜索规则（关键词、描述或响应类型）" 
-                                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                   class="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                    oninput="filterRules()">
                         </div>
                         <div class="ml-4 text-sm text-gray-600">
@@ -97,49 +97,43 @@
         </div>
         
         <!-- 全局设置 -->
-        <div id="settings-tab" class="tab-content hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">全局设置</h2>
+        <div id="settings-tab" class="hidden tab-content">
+            <div class="p-6 bg-white shadow-lg rounded-xl">
+                <h2 class="mb-6 text-2xl font-bold text-gray-800">全局设置</h2>
                 <form id="settings-form" class="space-y-6">
                     <div>
-                        <label for="call-keywords" class="block text-sm font-medium text-gray-700 mb-2">AI 唤醒关键词</label>
+                        <label for="call-keywords" class="block mb-2 text-sm font-medium text-gray-700">AI 唤醒关键词</label>
                         <input type="text" id="call-keywords" name="callKeywords" 
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                placeholder="请,你" value="请,你">
                         <p class="mt-1 text-sm text-gray-500">用英文逗号分隔多个关键词</p>
                     </div>
                     <div>
-                        <label for="system-prompt" class="block text-sm font-medium text-gray-700 mb-2">系统提示词</label>
+                        <label for="system-prompt" class="block mb-2 text-sm font-medium text-gray-700">系统提示词</label>
                         <textarea id="system-prompt" name="systemPrompt" rows="4"
                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                   placeholder="你是一个智能助手...">你是一个智能助手，请根据用户的问题给出回答。</textarea>
                     </div>
                     <div>
-                        <label for="history-max-length" class="block text-sm font-medium text-gray-700 mb-2">历史消息最大数量</label>
+                        <label for="history-max-length" class="block mb-2 text-sm font-medium text-gray-700">历史消息最大数量</label>
                         <input type="number" id="history-max-length" name="historyMaxLength" 
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                value="10" min="0" max="50">
                     </div>
                     
                     <!-- OpenAI 配置 -->
-                    <fieldset class="border border-gray-300 rounded-lg p-4">
-                        <legend class="text-sm font-semibold text-primary-600 px-2">🤖 OpenAI 配置</legend>
+                    <fieldset class="p-4 border border-gray-300 rounded-lg">
+                        <legend class="px-2 text-sm font-semibold text-primary-600">🤖 OpenAI 配置</legend>
                         <div class="space-y-4">
+                          
                             <div>
-                                <label for="openai-api-key" class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
-                                <input type="password" id="openai-api-key" name="openaiApiKey" 
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                       placeholder="sk-...（留空则不修改现有配置）">
-                                <p class="mt-1 text-sm text-gray-500">为了安全，保存后不会显示完整的 API Key</p>
-                            </div>
-                            <div>
-                                <label for="openai-base-url" class="block text-sm font-medium text-gray-700 mb-2">Base URL</label>
+                                <label for="openai-base-url" class="block mb-2 text-sm font-medium text-gray-700">Base URL</label>
                                 <input type="url" id="openai-base-url" name="openaiBaseUrl" 
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                        placeholder="https://api.openai.com/v1">
                             </div>
                             <div>
-                                <label for="openai-model" class="block text-sm font-medium text-gray-700 mb-2">模型</label>
+                                <label for="openai-model" class="block mb-2 text-sm font-medium text-gray-700">模型</label>
                                 <input type="text" id="openai-model" name="openaiModel" list="model-suggestions"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                        placeholder="输入模型名称，如：gpt-4o">
@@ -157,13 +151,20 @@
                                     <option value="qwen-turbo">
                                 </datalist>
                             </div>
+
+                              <div>
+                                <label for="openai-api-key" class="block mb-2 text-sm font-medium text-gray-700">API Key</label>
+                                <input  id="openai-api-key" name="openaiApiKey" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                       placeholder="api key">
+                            </div>
                         </div>
                     </fieldset>
                     <div class="flex space-x-4">
-                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                        <button type="submit" class="px-6 py-2 font-medium text-white transition-colors duration-200 bg-green-500 rounded-lg hover:bg-green-600">
                             💾 保存设置
                         </button>
-                        <button type="button" onclick="loadSettings()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                        <button type="button" onclick="loadSettings()" class="px-6 py-2 font-medium text-white transition-colors duration-200 bg-gray-500 rounded-lg hover:bg-gray-600">
                             🔄 重新加载
                         </button>
                     </div>
@@ -172,13 +173,13 @@
         </div>
         
         <!-- 编辑规则模态框 -->
-        <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div id="edit-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50">
             <div class="flex items-center justify-center min-h-screen p-4">
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-screen overflow-y-auto modal-content">
-                    <div class="bg-gradient-to-r from-primary-500 to-purple-600 text-white p-6 rounded-t-xl">
-                        <div class="flex justify-between items-center">
+                <div class="w-full max-w-4xl max-h-screen overflow-y-auto bg-white shadow-2xl rounded-xl modal-content">
+                    <div class="p-6 text-white bg-gradient-to-r from-primary-500 to-purple-600 rounded-t-xl">
+                        <div class="flex items-center justify-between">
                             <h3 class="text-xl font-bold">📝 编辑消息规则</h3>
-                            <button onclick="closeEditModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors duration-200">
+                            <button onclick="closeEditModal()" class="p-2 text-white transition-colors duration-200 rounded-full hover:bg-white hover:bg-opacity-20">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
@@ -190,18 +191,18 @@
                             <input type="hidden" id="edit-rule-id" name="ruleId">
                             
                             <div>
-                                <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-2">规则描述（可选）</label>
+                                <label for="edit-description" class="block mb-2 text-sm font-medium text-gray-700">规则描述（可选）</label>
                                 <input type="text" id="edit-description" name="description" 
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                        placeholder="规则描述">
                             </div>
                             
                             <!-- 触发条件配置 -->
-                            <fieldset class="border border-gray-300 rounded-lg p-4">
-                                <legend class="text-sm font-semibold text-primary-600 px-2">🎯 触发条件</legend>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <fieldset class="p-4 border border-gray-300 rounded-lg">
+                                <legend class="px-2 text-sm font-semibold text-primary-600">🎯 触发条件</legend>
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
-                                        <label for="edit-trigger-type" class="block text-sm font-medium text-gray-700 mb-2">匹配方式</label>
+                                        <label for="edit-trigger-type" class="block mb-2 text-sm font-medium text-gray-700">匹配方式</label>
                                         <select id="edit-trigger-type" name="triggerType" 
                                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                                             <option value="exact">精确匹配</option>
@@ -211,7 +212,7 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label for="edit-keyword" class="block text-sm font-medium text-gray-700 mb-2">关键词</label>
+                                        <label for="edit-keyword" class="block mb-2 text-sm font-medium text-gray-700">关键词</label>
                                         <input type="text" id="edit-keyword" name="keyword" 
                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                                placeholder="例如：测试播放文字" required>
@@ -220,10 +221,10 @@
                             </fieldset>
                             
                             <!-- 响应配置 -->
-                            <fieldset class="border border-gray-300 rounded-lg p-4">
-                                <legend class="text-sm font-semibold text-primary-600 px-2">🎬 响应配置</legend>
+                            <fieldset class="p-4 border border-gray-300 rounded-lg">
+                                <legend class="px-2 text-sm font-semibold text-primary-600">🎬 响应配置</legend>
                                 <div class="mb-4">
-                                    <label for="edit-response-type" class="block text-sm font-medium text-gray-700 mb-2">响应类型</label>
+                                    <label for="edit-response-type" class="block mb-2 text-sm font-medium text-gray-700">响应类型</label>
                                     <select id="edit-response-type" name="responseType" onchange="updateEditResponseFields()"
                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                                         <option value="text">文字回复</option>
@@ -245,7 +246,7 @@
                             </fieldset>
                             
                             <div>
-                                <label for="edit-enabled" class="block text-sm font-medium text-gray-700 mb-2">启用状态</label>
+                                <label for="edit-enabled" class="block mb-2 text-sm font-medium text-gray-700">启用状态</label>
                                 <select id="edit-enabled" name="enabled" 
                                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                                     <option value="true">启用</option>
@@ -253,13 +254,13 @@
                                 </select>
                             </div>
                             
-                            <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                            <div class="flex justify-end pt-4 space-x-4 border-t border-gray-200">
                                 <button type="button" onclick="closeEditModal()" 
-                                        class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                                        class="px-6 py-2 font-medium text-white transition-colors duration-200 bg-gray-500 rounded-lg hover:bg-gray-600">
                                     ❌ 取消
                                 </button>
                                 <button type="submit" 
-                                        class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                                        class="px-6 py-2 font-medium text-white transition-colors duration-200 bg-green-500 rounded-lg hover:bg-green-600">
                                     💾 保存更改
                                 </button>
                             </div>
@@ -343,7 +344,7 @@
             const rulesCount = document.getElementById('rules-count');
             
             if (rules.length === 0) {
-                rulesList.innerHTML = '<p class="text-gray-500 text-center py-12">暂无自定义规则</p>';
+                rulesList.innerHTML = '<p class="py-12 text-center text-gray-500">暂无自定义规则</p>';
                 rulesCount.textContent = '总共 0 条规则';
                 return;
             }
@@ -357,30 +358,30 @@
             }
             
             rulesList.innerHTML = rules.map(rule => `
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                    <div class="flex justify-between items-center">
+                <div class="p-4 transition-shadow duration-200 border border-gray-200 rounded-lg bg-gray-50 hover:shadow-md">
+                    <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <div class="flex items-center space-x-3 mb-2">
+                            <div class="flex items-center mb-2 space-x-3">
                                 <span class="text-lg font-semibold text-gray-900">"${rule.trigger.keyword}"</span>
                                 <span class="rule-type ${rule.response.type} text-white text-xs px-2 py-1 rounded font-medium">
                                     ${getRuleTypeText(rule.response.type)}
                                 </span>
-                                <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
+                                <span class="px-2 py-1 text-xs text-gray-700 bg-gray-200 rounded">
                                     ${getTriggerTypeText(rule.trigger.type)}
                                 </span>
-                                ${!rule.enabled ? '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded">已禁用</span>' : '<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded">已启用</span>'}
+                                ${!rule.enabled ? '<span class="px-2 py-1 text-xs text-red-700 bg-red-100 rounded">已禁用</span>' : '<span class="px-2 py-1 text-xs text-green-700 bg-green-100 rounded">已启用</span>'}
                             </div>
-                            <div class="text-gray-600 text-sm pl-2">
+                            <div class="pl-2 text-sm text-gray-600">
                                 ${rule.description || '无描述'}
                             </div>
                         </div>
-                        <div class="flex space-x-2 ml-4">
+                        <div class="flex ml-4 space-x-2">
                             <button onclick="editRule('${rule.id}')" 
-                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200">
+                                    class="px-3 py-1 text-sm text-white transition-colors duration-200 bg-blue-500 rounded hover:bg-blue-600">
                                 ✏️ 编辑
                             </button>
                             <button onclick="deleteRule('${rule.id}')" 
-                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200">
+                                    class="px-3 py-1 text-sm text-white transition-colors duration-200 bg-red-500 rounded hover:bg-red-600">
                                 🗑️ 删除
                             </button>
                         </div>
@@ -451,11 +452,11 @@
                 case 'builtInCommand':
                     return `内置指令：${response.builtInCommand}`;
                 case 'localCode':
-                    return `本地代码：<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.localCode}</pre>`;
+                    return `本地代码：<br><pre class="p-2 mt-2 overflow-x-auto text-sm bg-gray-100 rounded">${response.localCode}</pre>`;
                 case 'sandboxCode':
-                    return `沙盒代码：<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.sandboxCode}</pre>`;
+                    return `沙盒代码：<br><pre class="p-2 mt-2 overflow-x-auto text-sm bg-gray-100 rounded">${response.sandboxCode}</pre>`;
                 case 'terminalCommand':
-                    let terminalInfo = `终端命令：<code class="bg-gray-100 px-2 py-1 rounded">${response.terminalCommand}</code><br>`;
+                    let terminalInfo = `终端命令：<code class="px-2 py-1 bg-gray-100 rounded">${response.terminalCommand}</code><br>`;
                     
                     if (response.ssh) {
                         terminalInfo += `<span class="text-blue-600">🔐 SSH远程执行</span><br>`;
@@ -483,9 +484,9 @@
                     }
                     return apiInfo;
                 case 'pythonRemote':
-                    return `Python远程执行：${response.remoteUrl}<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.remoteCode}</pre>`;
+                    return `Python远程执行：${response.remoteUrl}<br><pre class="p-2 mt-2 overflow-x-auto text-sm bg-gray-100 rounded">${response.remoteCode}</pre>`;
                 case 'nodeRemote':
-                    return `Node远程执行：${response.remoteUrl}<br><pre class="bg-gray-100 p-2 mt-2 text-sm overflow-x-auto rounded">${response.remoteCode}</pre>`;
+                    return `Node远程执行：${response.remoteUrl}<br><pre class="p-2 mt-2 overflow-x-auto text-sm bg-gray-100 rounded">${response.remoteCode}</pre>`;
                 default:
                     return '未知类型';
             }
@@ -585,7 +586,7 @@
                 case 'text':
                     fieldsHTML = `
                         <div>
-                            <label for="edit-response-text" class="block text-sm font-medium text-gray-700 mb-2">回复文字</label>
+                            <label for="edit-response-text" class="block mb-2 text-sm font-medium text-gray-700">回复文字</label>
                             <textarea id="edit-response-text" name="responseText" rows="4" 
                                       class="${inputClass}" placeholder="输入要回复的文字内容"></textarea>
                         </div>
@@ -605,12 +606,12 @@
                 case 'audio':
                     fieldsHTML = `
                         <div>
-                            <label for="edit-audio-url" class="block text-sm font-medium text-gray-700 mb-2">音频链接</label>
+                            <label for="edit-audio-url" class="block mb-2 text-sm font-medium text-gray-700">音频链接</label>
                             <input type="url" id="edit-audio-url" name="audioUrl" class="${inputClass}" 
                                    placeholder="https://example.com/audio.mp3">
                         </div>
                         <div>
-                            <label for="edit-audio-text" class="block text-sm font-medium text-gray-700 mb-2">播放前的文字（可选）</label>
+                            <label for="edit-audio-text" class="block mb-2 text-sm font-medium text-gray-700">播放前的文字（可选）</label>
                             <input type="text" id="edit-audio-text" name="audioText" class="${inputClass}" 
                                    placeholder="即将播放音频">
                         </div>
@@ -619,7 +620,7 @@
                 case 'builtInCommand':
                     fieldsHTML = `
                         <div>
-                            <label for="edit-built-in-command" class="block text-sm font-medium text-gray-700 mb-2">内置指令</label>
+                            <label for="edit-built-in-command" class="block mb-2 text-sm font-medium text-gray-700">内置指令</label>
                             <input type="text" id="edit-built-in-command" name="builtInCommand" class="${inputClass}" 
                                    placeholder="开灯">
                             <p class="mt-1 text-sm text-gray-500">小爱音箱将执行此内置指令</p>
@@ -629,7 +630,7 @@
                 case 'localCode':
                     fieldsHTML = `
                         <div>
-                            <label for="edit-local-code" class="block text-sm font-medium text-gray-700 mb-2">JavaScript 代码</label>
+                            <label for="edit-local-code" class="block mb-2 text-sm font-medium text-gray-700">JavaScript 代码</label>
                             <textarea id="edit-local-code" name="localCode" rows="6" class="${inputClass}" 
                                       placeholder="await engine.speaker.abortXiaoAI();"></textarea>
                             <p class="mt-1 text-sm text-red-600">⚠️ 本地代码拥有完整系统权限，请谨慎使用</p>
@@ -647,7 +648,7 @@
                 case 'sandboxCode':
                     fieldsHTML = `
                         <div>
-                            <label for="edit-sandbox-code" class="block text-sm font-medium text-gray-700 mb-2">JavaScript 代码（沙盒环境）</label>
+                            <label for="edit-sandbox-code" class="block mb-2 text-sm font-medium text-gray-700">JavaScript 代码（沙盒环境）</label>
                             <textarea id="edit-sandbox-code" name="sandboxCode" rows="6" class="${inputClass}" 
                                       placeholder="console.log('Hello');"></textarea>
                             <p class="mt-1 text-sm text-blue-600">🔒 沙盒环境更安全但功能受限</p>
@@ -658,7 +659,7 @@
                     fieldsHTML = `
                         <div class="grid grid-cols-1 gap-4">
                             <div>
-                                <label for="edit-terminal-command" class="block text-sm font-medium text-gray-700 mb-2">终端命令</label>
+                                <label for="edit-terminal-command" class="block mb-2 text-sm font-medium text-gray-700">终端命令</label>
                                 <textarea id="edit-terminal-command" name="terminalCommand" rows="3" class="${inputClass}" 
                                           placeholder="ls -la&#10;echo 'Hello World'&#10;cat /etc/passwd" required></textarea>
                                 <p class="mt-1 text-sm text-gray-500">支持多行命令，每行一个命令</p>
@@ -666,32 +667,32 @@
                         </div>
                         
                         <!-- SSH配置 -->
-                        <div class="border border-gray-200 rounded-lg p-4 bg-blue-50">
+                        <div class="p-4 border border-gray-200 rounded-lg bg-blue-50">
                             <div class="flex items-center mb-3">
                                 <input type="checkbox" id="edit-ssh-enabled" name="sshEnabled" class="mr-2" onchange="toggleSshFields()">
                                 <label for="edit-ssh-enabled" class="text-sm font-medium text-blue-700">🔐 启用SSH远程执行</label>
                             </div>
-                            <div id="ssh-fields" class="space-y-4 hidden">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div id="ssh-fields" class="hidden space-y-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
-                                        <label for="edit-ssh-host" class="block text-sm font-medium text-gray-700 mb-2">SSH主机</label>
+                                        <label for="edit-ssh-host" class="block mb-2 text-sm font-medium text-gray-700">SSH主机</label>
                                         <input type="text" id="edit-ssh-host" name="sshHost" class="${inputClass}" 
                                                placeholder="192.168.1.100 或 example.com">
                                     </div>
                                     <div>
-                                        <label for="edit-ssh-port" class="block text-sm font-medium text-gray-700 mb-2">SSH端口</label>
+                                        <label for="edit-ssh-port" class="block mb-2 text-sm font-medium text-gray-700">SSH端口</label>
                                         <input type="number" id="edit-ssh-port" name="sshPort" class="${inputClass}" 
                                                value="22" min="1" max="65535">
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
-                                        <label for="edit-ssh-username" class="block text-sm font-medium text-gray-700 mb-2">SSH用户名</label>
+                                        <label for="edit-ssh-username" class="block mb-2 text-sm font-medium text-gray-700">SSH用户名</label>
                                         <input type="text" id="edit-ssh-username" name="sshUsername" class="${inputClass}" 
                                                placeholder="root 或 ubuntu">
                                     </div>
                                     <div>
-                                        <label for="edit-ssh-auth-method" class="block text-sm font-medium text-gray-700 mb-2">认证方式</label>
+                                        <label for="edit-ssh-auth-method" class="block mb-2 text-sm font-medium text-gray-700">认证方式</label>
                                         <select id="edit-ssh-auth-method" name="sshAuthMethod" class="${inputClass}" onchange="toggleAuthFields()">
                                             <option value="key">密钥认证</option>
                                             <option value="password">密码认证</option>
@@ -702,21 +703,21 @@
                                     <!-- 密钥认证字段 -->
                                     <div id="ssh-key-fields" class="space-y-4">
                                         <div>
-                                            <label for="edit-ssh-private-key-path" class="block text-sm font-medium text-gray-700 mb-2">私钥文件路径</label>
+                                            <label for="edit-ssh-private-key-path" class="block mb-2 text-sm font-medium text-gray-700">私钥文件路径</label>
                                             <input type="text" id="edit-ssh-private-key-path" name="sshPrivateKeyPath" class="${inputClass}" 
                                                    placeholder="~/.ssh/id_rsa 或 /path/to/private_key">
                                             <p class="mt-1 text-sm text-gray-500">支持相对路径和绝对路径</p>
                                         </div>
                                         <div>
-                                            <label for="edit-ssh-passphrase" class="block text-sm font-medium text-gray-700 mb-2">私钥密码短语（可选）</label>
+                                            <label for="edit-ssh-passphrase" class="block mb-2 text-sm font-medium text-gray-700">私钥密码短语（可选）</label>
                                             <input type="password" id="edit-ssh-passphrase" name="sshPassphrase" class="${inputClass}" 
                                                    placeholder="如果私钥有密码保护，请输入">
                                         </div>
                                     </div>
                                     <!-- 密码认证字段 -->
-                                    <div id="ssh-password-fields" class="space-y-4 hidden">
+                                    <div id="ssh-password-fields" class="hidden space-y-4">
                                         <div>
-                                            <label for="edit-ssh-password" class="block text-sm font-medium text-gray-700 mb-2">SSH密码</label>
+                                            <label for="edit-ssh-password" class="block mb-2 text-sm font-medium text-gray-700">SSH密码</label>
                                             <input type="password" id="edit-ssh-password" name="sshPassword" class="${inputClass}" 
                                                    placeholder="输入SSH登录密码">
                                             <p class="mt-1 text-sm text-red-600">⚠️ 密码将明文存储，建议使用密钥认证</p>
@@ -726,28 +727,28 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <label for="edit-terminal-working-dir" class="block text-sm font-medium text-gray-700 mb-2">工作目录（可选）</label>
+                                <label for="edit-terminal-working-dir" class="block mb-2 text-sm font-medium text-gray-700">工作目录（可选）</label>
                                 <input type="text" id="edit-terminal-working-dir" name="terminalWorkingDir" class="${inputClass}" 
                                        placeholder="/path/to/directory">
                             </div>
                             <div>
-                                <label for="edit-terminal-return-output" class="block text-sm font-medium text-gray-700 mb-2">返回输出</label>
+                                <label for="edit-terminal-return-output" class="block mb-2 text-sm font-medium text-gray-700">返回输出</label>
                                 <select id="edit-terminal-return-output" name="terminalReturnOutput" class="${inputClass}">
                                     <option value="true">是 - 返回命令输出</option>
                                     <option value="false">否 - 仅确认执行</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
-                                <label for="edit-terminal-timeout" class="block text-sm font-medium text-gray-700 mb-2">超时时间（秒）</label>
+                                <label for="edit-terminal-timeout" class="block mb-2 text-sm font-medium text-gray-700">超时时间（秒）</label>
                                 <input type="number" id="edit-terminal-timeout" name="terminalTimeout" class="${inputClass}" 
                                        value="30" min="1" max="300">
                             </div>
                         </div>
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
+                        <div class="p-3 mt-4 border border-yellow-200 rounded-lg bg-yellow-50">
                             <p class="text-sm text-yellow-800">
                                 <strong>⚠️ 安全提示：</strong>
                                 <br>• 本地执行：命令将在本地系统执行，具有完整权限
@@ -760,9 +761,9 @@
                     break;
                 case 'apiCall':
                     fieldsHTML = `
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
-                                <label for="edit-api-method" class="block text-sm font-medium text-gray-700 mb-2">请求方法</label>
+                                <label for="edit-api-method" class="block mb-2 text-sm font-medium text-gray-700">请求方法</label>
                                 <select id="edit-api-method" name="apiMethod" class="${inputClass}">
                                     <option value="GET">GET</option>
                                     <option value="POST">POST</option>
@@ -771,26 +772,26 @@
                                 </select>
                             </div>
                             <div class="md:col-span-2">
-                                <label for="edit-api-url" class="block text-sm font-medium text-gray-700 mb-2">API地址</label>
+                                <label for="edit-api-url" class="block mb-2 text-sm font-medium text-gray-700">API地址</label>
                                 <input type="url" id="edit-api-url" name="apiUrl" class="${inputClass}" 
                                        placeholder="https://api.example.com/endpoint">
                             </div>
                         </div>
                         <div>
-                            <label for="edit-api-headers" class="block text-sm font-medium text-gray-700 mb-2">请求头（JSON格式，可选）</label>
+                            <label for="edit-api-headers" class="block mb-2 text-sm font-medium text-gray-700">请求头（JSON格式，可选）</label>
                             <textarea id="edit-api-headers" name="apiHeaders" rows="3" class="${inputClass}" 
                                       placeholder='{"Authorization": "Bearer token"}'></textarea>
                         </div>
                         <div>
-                            <label for="edit-api-body" class="block text-sm font-medium text-gray-700 mb-2">请求体（JSON格式，仅POST/PUT）</label>
+                            <label for="edit-api-body" class="block mb-2 text-sm font-medium text-gray-700">请求体（JSON格式，仅POST/PUT）</label>
                             <textarea id="edit-api-body" name="apiBody" rows="3" class="${inputClass}" 
                                       placeholder='{"key": "value"}'></textarea>
                         </div>
-                        <div class="bg-gray-50 p-4 rounded-lg mt-4">
-                            <h4 class="text-sm font-medium text-gray-700 mb-3">响应解析配置</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 mt-4 rounded-lg bg-gray-50">
+                            <h4 class="mb-3 text-sm font-medium text-gray-700">响应解析配置</h4>
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label for="edit-api-response-type" class="block text-sm font-medium text-gray-700 mb-2">响应数据类型</label>
+                                    <label for="edit-api-response-type" class="block mb-2 text-sm font-medium text-gray-700">响应数据类型</label>
                                     <select id="edit-api-response-type" name="apiResponseType" class="${inputClass}">
                                         <option value="auto">自动检测</option>
                                         <option value="json">JSON</option>
@@ -798,13 +799,13 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label for="edit-api-response-path" class="block text-sm font-medium text-gray-700 mb-2">JSON路径（可选）</label>
+                                    <label for="edit-api-response-path" class="block mb-2 text-sm font-medium text-gray-700">JSON路径（可选）</label>
                                     <input type="text" id="edit-api-response-path" name="apiResponsePath" class="${inputClass}" 
                                            placeholder="data.text 或 message">
                                 </div>
                             </div>
                             <div class="mt-3">
-                                <label for="edit-api-response-fallback" class="block text-sm font-medium text-gray-700 mb-2">解析失败时的默认文本</label>
+                                <label for="edit-api-response-fallback" class="block mb-2 text-sm font-medium text-gray-700">解析失败时的默认文本</label>
                                 <input type="text" id="edit-api-response-fallback" name="apiResponseFallback" class="${inputClass}" 
                                        placeholder="API调用成功，但响应解析失败">
                             </div>
@@ -816,20 +817,20 @@
                     break;
                 case 'pythonRemote':
                     fieldsHTML = `
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div class="md:col-span-2">
-                                <label for="edit-python-url" class="block text-sm font-medium text-gray-700 mb-2">远程执行服务地址</label>
+                                <label for="edit-python-url" class="block mb-2 text-sm font-medium text-gray-700">远程执行服务地址</label>
                                 <input type="url" id="edit-python-url" name="pythonUrl" class="${inputClass}" 
                                        placeholder="https://your-python-executor.com/execute">
                             </div>
                             <div>
-                                <label for="edit-python-timeout" class="block text-sm font-medium text-gray-700 mb-2">超时时间（秒）</label>
+                                <label for="edit-python-timeout" class="block mb-2 text-sm font-medium text-gray-700">超时时间（秒）</label>
                                 <input type="number" id="edit-python-timeout" name="pythonTimeout" class="${inputClass}" 
                                        value="30" min="1" max="300">
                             </div>
                         </div>
                         <div>
-                            <label for="edit-python-code" class="block text-sm font-medium text-gray-700 mb-2">Python 代码</label>
+                            <label for="edit-python-code" class="block mb-2 text-sm font-medium text-gray-700">Python 代码</label>
                             <textarea id="edit-python-code" name="pythonCode" rows="6" class="${inputClass}" 
                                       placeholder="print('Hello Python')"></textarea>
                         </div>
@@ -837,20 +838,20 @@
                     break;
                 case 'nodeRemote':
                     fieldsHTML = `
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div class="md:col-span-2">
-                                <label for="edit-node-url" class="block text-sm font-medium text-gray-700 mb-2">远程执行服务地址</label>
+                                <label for="edit-node-url" class="block mb-2 text-sm font-medium text-gray-700">远程执行服务地址</label>
                                 <input type="url" id="edit-node-url" name="nodeUrl" class="${inputClass}" 
                                        placeholder="https://your-node-executor.com/execute">
                             </div>
                             <div>
-                                <label for="edit-node-timeout" class="block text-sm font-medium text-gray-700 mb-2">超时时间（秒）</label>
+                                <label for="edit-node-timeout" class="block mb-2 text-sm font-medium text-gray-700">超时时间（秒）</label>
                                 <input type="number" id="edit-node-timeout" name="nodeTimeout" class="${inputClass}" 
                                        value="30" min="1" max="300">
                             </div>
                         </div>
                         <div>
-                            <label for="edit-node-code" class="block text-sm font-medium text-gray-700 mb-2">Node.js 代码</label>
+                            <label for="edit-node-code" class="block mb-2 text-sm font-medium text-gray-700">Node.js 代码</label>
                             <textarea id="edit-node-code" name="nodeCode" rows="6" class="${inputClass}" 
                                       placeholder="console.log('Hello Node');"></textarea>
                         </div>
@@ -995,16 +996,7 @@
                 document.getElementById('system-prompt').value = settings.systemPrompt || '';
                 document.getElementById('history-max-length').value = settings.historyMaxLength || 10;
                 
-                // OpenAI 设置
-                // API Key 不显示完整内容，只显示占位符或前几位
-                const apiKeyField = document.getElementById('openai-api-key');
-                if (settings.openai?.apiKey) {
-                    apiKeyField.placeholder = '••••••••' + settings.openai.apiKey.slice(-4);
-                    apiKeyField.value = ''; // 不显示完整的 API Key
-                } else {
-                    apiKeyField.placeholder = 'sk-...（留空则不修改现有配置）';
-                }
-                
+                document.getElementById('openai-api-key').value = settings.openai?.apiKey || '';
                 document.getElementById('openai-base-url').value = settings.openai?.baseUrl || 'https://api.openai.com/v1';
                 document.getElementById('openai-model').value = settings.openai?.model || 'gpt-3.5-turbo';
                 

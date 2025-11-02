@@ -14,6 +14,7 @@ const kDefaultOpenXiaoAIConfig: OpenXiaoAIConfig = {
 
 class OpenXiaoAIEngine extends MiGPTEngine {
   speaker = OpenXiaoAISpeaker;
+  private rustServerStarted = false;
 
   async start(config: OpenXiaoAIConfig) {
     await super.start(deepMerge(kDefaultOpenXiaoAIConfig, config));
@@ -22,11 +23,25 @@ class OpenXiaoAIEngine extends MiGPTEngine {
       on_event: this.onEvent,
       on_input_data: this.onRecord,
     };
-    // 启动服务
-    console.log("✅ 服务已启动...");
-    await RustServer.start();
+    if (!this.rustServerStarted) {
+      console.log("✅ 启动 Rust 服务...");
+      await RustServer.start();
+      this.rustServerStarted = true;
+      console.log("✅ Rust 服务已启动");
+    } else {
+      console.log("ℹ️ Rust 服务已在运行，跳过重新启动");
+    }
   }
 
+  async stop() {
+    console.log("� 正在停止服务...");
+    await super.stop();
+  }
+
+  async restart(config: OpenXiaoAIConfig) {
+    await this.stop();
+    await this.start(config);
+  }
   /**
    * 收到事件
    */

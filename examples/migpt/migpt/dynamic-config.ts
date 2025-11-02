@@ -62,6 +62,7 @@ export class DynamicConfig {
   }
 
   public getOpenAIBaseURL(): string | undefined {
+    this.settings = webServer.getCurrentSettings();
     return this.settings.openai?.baseUrl;
   }
 

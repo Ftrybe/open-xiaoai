@@ -220,14 +220,27 @@ class WebServer {
     });
     
     // 保存设置
-    this.app.post('/api/settings', (req, res) => {
+    this.app.post('/api/settings', async (req, res) => {
       try {
         const settings: AppSettings = req.body;
         this.saveSettings(settings);
-        res.json({ success: true });
-      } catch (error) {
-        res.status(500).send('保存设置失败: ' + (error as Error).message);
-      }
+
+        // 刷新动态配置，保证 getters 读到的是最新值
+        const { dynamicConfig } = await import('./dynamic-config.js');
+        dynamicConfig.reloadConfig();
+
+        // 调用重启
+        const [{ OpenXiaoAI }, { kOpenXiaoAIConfig }] = await Promise.all([
+          import('./xiaoai.js'),
+          import('../config.js'),
+        ]);
+        await OpenXiaoAI.restart(kOpenXiaoAIConfig);
+
+          res.json({ success: true, restarted: true });
+        } catch (error) {
+          console.error('保存设置或重启失败:', error);
+          res.status(500).send('保存设置失败: ' + (error as Error).message);
+        }
     });
     
     // 重新加载配置
